@@ -16,7 +16,7 @@ routines. PNW-flavored, goal-oriented.
 
 ```bash
 bin/setup   # install deps, prepare the database
-bin/dev     # boots Rails (:3000) + Vite (:3036) via foreman
+bin/dev     # boots Rails (:3200) + Vite (:3236) via foreman
 ```
 
 Config lives in `.env` (copy from `.env.example`). Dev connects to the shared local

@@ -28,8 +28,9 @@
 threads_count = ENV.fetch("RAILS_MAX_THREADS", 3)
 threads threads_count, threads_count
 
-# Specifies the `port` that Puma will listen on to receive requests; default is 3000.
-port ENV.fetch("PORT", 3000)
+# Specifies the `port` that Puma will listen on to receive requests. Summit uses
+# 3200 (not the Rails default 3000) to avoid clashing with other local projects.
+port ENV.fetch("PORT", 3200)
 
 # Allow puma to be restarted by `bin/rails restart` command.
 plugin :tmp_restart
