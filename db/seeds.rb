@@ -7,3 +7,7 @@
 #   ["Action", "Comedy", "Drama", "Horror"].each do |genre_name|
 #     MovieGenre.find_or_create_by!(name: genre_name)
 #   end
+
+# The two users. Identity is a picker, not auth (see docs/data_model.md). The
+# Library ships empty; these are Context, and the picker needs someone to pick.
+%w[Aaron Bree].each { |name| User.find_or_create_by!(name: name) }

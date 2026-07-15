@@ -1,22 +1,29 @@
-import { useEffect, useState } from 'react'
-import { apiV1Health } from '~/api'
+import { Routes, Route } from 'react-router-dom'
+import { useSession } from '~/api/queries'
+import UserPicker from './UserPicker'
+import Layout from './Layout'
+import Placeholder from './Placeholder'
 
-type Health = { status: string }
-
+// The shell. Identity gates everything: no user in session -> picker; otherwise
+// the nav + routed screens. Feature screens are stubs for now.
 export default function App() {
-  const [health, setHealth] = useState<string>('checking…')
+  const { data: user, isLoading } = useSession()
 
-  useEffect(() => {
-    apiV1Health
-      .show<Health>()
-      .then((data) => setHealth(data.status))
-      .catch(() => setHealth('unreachable'))
-  }, [])
+  if (isLoading) {
+    return <p className="page-container text-muted">Loading…</p>
+  }
+
+  if (!user) {
+    return <UserPicker />
+  }
 
   return (
-    <main>
-      <h1>Summit</h1>
-      <p>API health: {health}</p>
-    </main>
+    <Layout user={user}>
+      <Routes>
+        <Route path="/" element={<Placeholder title="Today" />} />
+        <Route path="/library" element={<Placeholder title="Library" />} />
+        <Route path="/nutrition" element={<Placeholder title="Nutrition" />} />
+      </Routes>
+    </Layout>
   )
 }

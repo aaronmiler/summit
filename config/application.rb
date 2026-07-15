@@ -31,6 +31,15 @@ module Summit
     # controller (see PagesController); everything else is JSON under /api.
     config.api_only = true
 
+    # API-only strips session/cookie middleware. Identity is the "which of the 2
+    # are you" picker, stored in an encrypted session cookie so current_user is
+    # derived server-side — no per-request user plumbing on the client. The React
+    # app is served same-origin (Rails :3200), so the cookie rides along
+    # automatically. Add the middleware back:
+    config.middleware.use ActionDispatch::Cookies
+    config.middleware.use ActionDispatch::Session::CookieStore,
+                          key: "_summit_session", same_site: :lax
+
     # RSpec + FactoryBot for generated specs; skip the specs we don't write.
     config.generators do |g|
       g.test_framework :rspec, fixtures: false, view_specs: false,

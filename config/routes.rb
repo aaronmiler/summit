@@ -9,6 +9,11 @@ Rails.application.routes.draw do
   namespace :api do
     namespace :v1 do
       get "health", to: "health#show", defaults: { export: true }
+
+      # The "which of the 2 are you" picker. `session` is identity (cookie-backed),
+      # `users` is the list of choices. `export: true` emits typed JS helpers.
+      resource :session, only: %i[show create destroy], defaults: { export: true }
+      resources :users, only: %i[index], defaults: { export: true }
     end
   end
 

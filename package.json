@@ -20,9 +20,12 @@
     "vitest": "^4.1.10"
   },
   "dependencies": {
+    "@fontsource-variable/inter": "^5.2.8",
     "@js-from-routes/client": "^1.0.4",
+    "@tanstack/react-query": "^5.101.2",
     "react": "^19.2.7",
-    "react-dom": "^19.2.7"
+    "react-dom": "^19.2.7",
+    "react-router-dom": "^7.18.1"
   },
   "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
 }
