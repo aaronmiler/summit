@@ -148,6 +148,22 @@ export function useFinishWorkout() {
   })
 }
 
+// Discard a mis-started (empty) workout -> back to the routine picker. Plain
+// fetch (the destroy helper isn't generated); the server 422s if it has sets.
+export function useDiscardWorkout() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (workoutId: number) => {
+      const res = await fetch(`/api/v1/workouts/${workoutId}`, {
+        method: 'DELETE',
+        credentials: 'same-origin',
+      })
+      if (!res.ok) throw new Error('Failed to discard workout')
+    },
+    onSuccess: () => queryClient.setQueryData(['workout', 'current'], null),
+  })
+}
+
 // --- History (past workouts) --------------------------------------------
 
 // The picked user's finished workouts, newest first (the History tab).

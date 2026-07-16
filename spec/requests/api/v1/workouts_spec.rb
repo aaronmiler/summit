@@ -133,6 +133,20 @@ RSpec.describe "Api::V1::Workouts", type: :request do
       )
     end
 
+    it "surfaces activity + calories for off-script (import-materialized) workouts" do
+      offscript = create(:workout, user: aaron, routine: nil,
+        started_at: 1.hour.ago, finished_at: 30.minutes.ago)
+      create(:health_import, workout: offscript, user: aaron,
+        activity_type: "Climbing", calories: 290)
+
+      get "/api/v1/workouts"
+
+      expect(response.parsed_body.first).to include(
+        "id" => offscript.id, "set_count" => 0, "routine" => nil,
+        "activity" => "Climbing", "calories" => 290,
+      )
+    end
+
     it "excludes the active (unfinished) workout and other users' workouts" do
       create(:workout, user: aaron, routine:, started_at: 1.hour.ago, finished_at: nil) # active
       create(:workout, user: create(:user, name: "Bree"), routine:, started_at: 1.hour.ago, finished_at: 1.hour.ago)
@@ -165,6 +179,30 @@ RSpec.describe "Api::V1::Workouts", type: :request do
       others = create(:workout, user: create(:user, name: "Bree"), routine:, started_at: 1.hour.ago, finished_at: 1.hour.ago)
       get "/api/v1/workouts/#{others.id}"
       expect(response).to have_http_status(:not_found)
+    end
+  end
+
+  describe "DELETE /api/v1/workouts/:id (discard a mis-start)" do
+    before { sign_in(aaron) }
+
+    it "discards an empty workout (back out to change routine)" do
+      post "/api/v1/workouts", params: { routine_id: routine.id }
+      workout_id = response.parsed_body["id"]
+
+      expect { delete "/api/v1/workouts/#{workout_id}" }.to change { aaron.workouts.count }.by(-1)
+      expect(response).to have_http_status(:no_content)
+
+      get "/api/v1/workouts/current"
+      expect(response.parsed_body).to be_nil
+    end
+
+    it "refuses once sets are logged (finish, don't discard)" do
+      post "/api/v1/workouts", params: { routine_id: routine.id }
+      workout_id = response.parsed_body["id"]
+      post "/api/v1/workouts/#{workout_id}/set_logs", params: { exercise_id: row.id, routine_exercise_id: slot.id, reps: 8 }
+
+      expect { delete "/api/v1/workouts/#{workout_id}" }.not_to change { aaron.workouts.count }
+      expect(response).to have_http_status(:unprocessable_content)
     end
   end
 

@@ -21,7 +21,7 @@ Rails.application.routes.draw do
 
       # Logging. `current` is the active (unfinished) workout for the picked user
       # — the live session. Sets are logged into it; `destroy` removes a mislog.
-      resources :workouts, only: %i[index show create update], defaults: { export: true } do
+      resources :workouts, only: %i[index show create update destroy], defaults: { export: true } do
         get :current, on: :collection, defaults: { export: true }
         resources :set_logs, only: %i[create], defaults: { export: true }
       end

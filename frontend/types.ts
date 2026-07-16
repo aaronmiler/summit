@@ -151,6 +151,9 @@ export type WorkoutSummary = {
   finishedAt: string | null
   routine: { id: number; name: string } | null
   setCount: number
+  // Present only for off-script workouts materialized from a health import.
+  activity: string | null
+  calories: number | null
 }
 
 // The logged sets for one movement within a past workout (grouped off the Log).

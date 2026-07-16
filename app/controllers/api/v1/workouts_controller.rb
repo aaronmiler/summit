@@ -11,16 +11,21 @@ module Api
       # recent first, as lightweight summaries (the History tab list).
       def index
         workouts = current_user.workouts.where.not(finished_at: nil)
-          .includes(:routine).order(started_at: :desc)
+          .includes(:routine, :health_imports).order(started_at: :desc)
         set_counts = SetLog.where(workout_id: workouts.map(&:id)).group(:workout_id).count
 
         render json: workouts.map { |w|
+          # Off-script workouts are materialized from a health import; surface its
+          # activity name + calories so the row isn't a nameless "0 sets".
+          import = w.health_imports.first
           {
             "id" => w.id,
             "started_at" => w.started_at,
             "finished_at" => w.finished_at,
             "routine" => w.routine&.as_json(only: %i[id name]),
-            "set_count" => set_counts[w.id] || 0
+            "set_count" => set_counts[w.id] || 0,
+            "activity" => import&.activity_type,
+            "calories" => import&.calories
           }
         }
       end
@@ -59,6 +64,17 @@ module Api
         workout = current_user.workouts.find(params[:id])
         workout.update!(params.permit(:finished_at, :notes))
         render json: workout.as_json(only: %i[id started_at finished_at notes])
+      end
+
+      # DELETE /api/v1/workouts/:id -> discard a mis-started workout. Only when
+      # nothing's been logged (backing out to change routine); once there are
+      # sets, "finish" is the exit, not delete — so history can't be lost here.
+      def destroy
+        workout = current_user.workouts.find(params[:id])
+        return render(json: { error: "workout has logged sets" }, status: 422) if workout.set_logs.exists?
+
+        workout.destroy!
+        head :no_content
       end
 
       private

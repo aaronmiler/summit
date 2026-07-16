@@ -61,6 +61,9 @@ The headline flow, second vertical: **Today → pick a routine → start a `Work
   checklist** (done/todo dot per slot); tap a slot to **focus** it. The focused
   step is **jumpable** — progress dots + prev/next, any order — so it honors "next
   man up" rather than forcing a linear wizard. (Layout only; the API is unchanged.)
+- **Back out of a mis-pick:** while nothing's logged, a **Change routine** button
+  discards the workout (`DELETE …/workouts/:id`, guarded server-side to no-sets)
+  and drops back to the picker. Once a set exists, Finish is the only exit.
 
 - **"Active workout" = most recent `Workout` with `finished_at IS NULL`** for the
   picked user (`User#active_workout`). Starting guards against a double-start
@@ -140,6 +143,7 @@ a hard rule for every new endpoint — mirror the wire in camelCase.
 | `GET /api/v1/workouts/:id` | A past workout, sets grouped by exercise |
 | `POST /api/v1/workouts` | Start a session (guards double-start) |
 | `PATCH /api/v1/workouts/:id` | Finish / annotate |
+| `DELETE /api/v1/workouts/:id` | Discard a mis-started (empty) workout |
 | `POST /api/v1/health_imports` | Apple Health push (Bearer token) → materialized workout |
 | `GET /api/v1/health_imports/setup` | HAE setup values for the picked user (session) |
 | `POST /api/v1/workouts/:id/set_logs` | Log a set (auto set_number) |

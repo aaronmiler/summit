@@ -22,15 +22,20 @@ export default function History() {
         <ol className="history-list">
           {workouts.map((workout) => {
             const duration = workoutDuration(workout.startedAt, workout.finishedAt)
+            const name = workout.routine?.name ?? workout.activity ?? 'Off-script'
+            const meta = [
+              workout.setCount > 0 && `${workout.setCount} set${workout.setCount === 1 ? '' : 's'}`,
+              workout.calories != null && `${workout.calories} cal`,
+              duration,
+            ]
+              .filter(Boolean)
+              .join(' · ')
             return (
               <li key={workout.id}>
                 <Link to={`/history/${workout.id}`} className="history-row">
                   <span className="history-date">{formatDate(workout.startedAt)}</span>
-                  <span className="history-name">{workout.routine?.name ?? 'Off-script'}</span>
-                  <span className="history-meta caption text-muted">
-                    {workout.setCount} set{workout.setCount === 1 ? '' : 's'}
-                    {duration && ` · ${duration}`}
-                  </span>
+                  <span className="history-name">{name}</span>
+                  <span className="history-meta caption text-muted">{meta}</span>
                 </Link>
               </li>
             )

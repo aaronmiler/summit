@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { Workout, WorkoutSlot } from '~/types'
-import { useDeleteSet, useFinishWorkout, useLogSet } from '~/api/queries'
+import { useDeleteSet, useDiscardWorkout, useFinishWorkout, useLogSet } from '~/api/queries'
 import { widgetFor } from '~/lib/modality'
 import { describeSet, formatTime } from '~/lib/format'
 import SetForm, { type SetFields } from './SetForm'
@@ -11,11 +11,14 @@ import SetForm, { type SetFields } from './SetForm'
 // ("next man up"). Finishing sets finished_at, so `current` goes null.
 export default function WorkoutSession({ workout }: { workout: Workout }) {
   const finish = useFinishWorkout()
+  const discard = useDiscardWorkout()
   // null = overview; a number = the focused slot index.
   const [focused, setFocused] = useState<number | null>(null)
 
   const slots = workout.slots
   const focusedSlot = focused == null ? null : slots[focused]
+  // Nothing logged yet -> a mis-pick is recoverable: discard and pick again.
+  const empty = !slots.some((slot) => slot.sets.length > 0)
 
   return (
     <section>
@@ -24,9 +27,16 @@ export default function WorkoutSession({ workout }: { workout: Workout }) {
           <h1 className="page-heading text-green">{workout.routine?.name ?? 'Workout'}</h1>
           <p className="caption text-muted">Started {formatTime(workout.startedAt)}</p>
         </div>
-        <button className="btn btn--primary" disabled={finish.isPending} onClick={() => finish.mutate(workout.id)}>
-          Finish
-        </button>
+        <div className="session-actions">
+          {empty && (
+            <button className="btn btn--ghost" disabled={discard.isPending} onClick={() => discard.mutate(workout.id)}>
+              Change routine
+            </button>
+          )}
+          <button className="btn btn--primary" disabled={finish.isPending} onClick={() => finish.mutate(workout.id)}>
+            Finish
+          </button>
+        </div>
       </div>
 
       {focusedSlot ? (

@@ -68,7 +68,7 @@ module Api
           raw: workout
         )
         workout_record = @token_user.workouts.create!(
-          routine_id: nil, started_at: started, finished_at: finished, notes: summary(workout)
+          routine_id: nil, started_at: started, finished_at: finished, notes: import.summary
         )
         import.update!(workout: workout_record)
         :created
@@ -86,17 +86,6 @@ module Api
         Time.zone.parse(value.to_s)
       rescue ArgumentError
         nil
-      end
-
-      def summary(workout)
-        bits = [ workout["name"] ]
-        if (d = qty(workout["distance"]))
-          bits << "#{d} #{workout.dig('distance', 'units') || 'mi'}"
-        end
-        if (c = qty(workout["activeEnergyBurned"]))
-          bits << "#{c.round} cal"
-        end
-        bits.compact.join(" · ")
       end
     end
   end
