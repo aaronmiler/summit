@@ -13,51 +13,49 @@
 %w[Aaron Bree].each { |name| User.find_or_create_by!(name: name) }
 
 # ---------------------------------------------------------------------------
-# Library (shared, evergreen). Seeded so there's something to browse and, later,
-# train against. Idempotent: keyed on the unique-by-name library objects, so
-# re-running never duplicates. This is a *starter* library, freely editable in
-# the app — not an authoritative catalog.
+# Library (shared, evergreen). Seeded from the current 4-week strength program —
+# the two *strength* days (Mon Pull/Core, Fri Push/Legs). Cardio (Wed) and
+# bouldering (Tu/Th) arrive via the Apple Health import, not as logged routines.
+# Idempotent: keyed on unique-by-name library objects, so re-running updates in
+# place. Freely editable in the app.
 # ---------------------------------------------------------------------------
 
-# Exercises — specific movements (modality is load-bearing; it drives the future
-# logging widget). muscle_group is a loose grouping for the browser + LLM.
+# Exercises — specific movements (modality drives the logging widget).
 exercises = [
-  { name: "Pull-up",              modality: "bodyweight", muscle_group: "Back" },
-  { name: "Scapular Pull-up",     modality: "bodyweight", muscle_group: "Back" },
-  { name: "Negative Pull-up",     modality: "bodyweight", muscle_group: "Back" },
-  { name: "Chin-up",              modality: "bodyweight", muscle_group: "Back" },
-  { name: "Barbell Bent-over Row", modality: "barbell",   muscle_group: "Back" },
-  { name: "Dumbbell Row",         modality: "dumbbell",   muscle_group: "Back" },
-  { name: "Lat Pulldown",         modality: "machine",    muscle_group: "Back" },
-  { name: "Face Pull",            modality: "band",       muscle_group: "Shoulders" },
-  { name: "Barbell Bicep Curl",   modality: "barbell",    muscle_group: "Arms" },
-  { name: "Dumbbell Bicep Curl",  modality: "dumbbell",   muscle_group: "Arms" },
-  { name: "Hanging Leg Raise",    modality: "bodyweight", muscle_group: "Core" },
-  { name: "Plank",                modality: "bodyweight", muscle_group: "Core" },
-  { name: "Cable Crunch",         modality: "machine",    muscle_group: "Core" },
-  { name: "Half-crimp Hang",      modality: "hangboard",  muscle_group: "Grip" },
-  { name: "Open-hand Hang",       modality: "hangboard",  muscle_group: "Grip" },
-  { name: "Zone 2 Run",           modality: "cardio",     muscle_group: "Cardio" },
-  { name: "Stationary Bike",      modality: "cardio",     muscle_group: "Cardio" },
-  { name: "Bouldering",           modality: "climbing",   muscle_group: "Full body" }
+  # Pull-up ladder (the progression phases)
+  { name: "Scapular Pull-up",           modality: "bodyweight", muscle_group: "Back" },
+  { name: "Negative Pull-up",           modality: "bodyweight", muscle_group: "Back" },
+  { name: "Pull-up",                    modality: "bodyweight", muscle_group: "Back" },
+  # Monday — Pull/Core
+  { name: "One-arm Dumbbell Row",       modality: "dumbbell",   muscle_group: "Back" },
+  { name: "TRX Inverted Row",           modality: "bodyweight", muscle_group: "Back" },
+  { name: "Hanging Leg Raise",          modality: "bodyweight", muscle_group: "Core" },
+  { name: "Pallof Press",               modality: "band",       muscle_group: "Core" },
+  { name: "Dead Hang",                  modality: "hangboard",  muscle_group: "Grip" },
+  # Friday — Push/Legs/Antagonist
+  { name: "Dumbbell Bench Press",       modality: "dumbbell",   muscle_group: "Chest" },
+  { name: "Dumbbell Goblet Squat",      modality: "dumbbell",   muscle_group: "Legs" },
+  { name: "Dumbbell Overhead Press",    modality: "dumbbell",   muscle_group: "Shoulders" },
+  { name: "Dumbbell Romanian Deadlift", modality: "dumbbell",   muscle_group: "Hamstrings" },
+  { name: "Push-up",                    modality: "bodyweight", muscle_group: "Chest" },
+  { name: "Face Pull",                  modality: "band",       muscle_group: "Shoulders" }
 ].map { |attrs| Exercise.find_or_create_by!(name: attrs[:name]) { |e| e.assign_attributes(attrs) } }
   .index_by(&:name)
 
-# A real multi-phase progression: the pull-up ladder. Named after the
-# destination movement. Phases span *different* exercises.
+# The pull-up ladder: pick your current phase, graduate when the criteria are met.
+# Current phase is derived from your most recent logged set against it.
 pullups = Progression.find_or_create_by!(name: "Pull-ups")
 [
-  { exercise: exercises["Scapular Pull-up"], target: "3 × 8",       graduation_criteria: "3 × 8 clean, full depth" },
-  { exercise: exercises["Negative Pull-up"], target: "3 × 5 slow",  graduation_criteria: "3 × 5 with a 5s lower" },
-  { exercise: exercises["Pull-up"],          target: "3 × 5",       graduation_criteria: "3 × 5 dead-hang, no kip" }
+  { exercise: exercises["Scapular Pull-up"], target: "4 × 8–10",  graduation_criteria: "4 × 10 clean + 45 sec dead hang" },
+  { exercise: exercises["Negative Pull-up"], target: "4 × 3–5",   graduation_criteria: "5-sec negatives clean 4 × 5 (or 4 × 8 with lightest band)" },
+  { exercise: exercises["Pull-up"],          target: "5–8 × 1–3", graduation_criteria: "5 clean reps unbroken → then 4 × AMRAP-1, add weight at 8+" }
 ].each_with_index do |attrs, i|
   phase = pullups.progression_phases.find_or_initialize_by(position: i)
   phase.update!(attrs)
 end
 
 # Routines — the drop-in training blocks. Slots reference an exercise XOR a
-# progression. Idempotent on (routine, position): re-seeding rewrites the slot
-# in place rather than appending.
+# progression. Idempotent on (routine, position): re-seeding rewrites the slot.
 def slot!(routine, position, target:, exercise: nil, progression: nil, rest_seconds: nil, notes: nil, progression_note: nil)
   re = routine.routine_exercises.find_or_initialize_by(position: position)
   re.update!(
@@ -66,32 +64,50 @@ def slot!(routine, position, target:, exercise: nil, progression: nil, rest_seco
   )
 end
 
-pull_core = Routine.find_or_create_by!(name: "Pull/Core") do |r|
-  r.notes = "Vertical + horizontal pull, then core. Warm up shoulders first."
-  r.tags = %w[pull core strength]
-  r.preferred_frequency = "2×/week"
-end
-slot!(pull_core, 0, progression: pullups, target: "3 × 5", rest_seconds: 120,
-      progression_note: "When you graduate a phase, log against the next one.")
-slot!(pull_core, 1, exercise: exercises["Barbell Bent-over Row"], target: "4 × 8", rest_seconds: 120, notes: "Flat back, pull to the navel.")
-slot!(pull_core, 2, exercise: exercises["Face Pull"], target: "3 × 15", rest_seconds: 60)
-slot!(pull_core, 3, exercise: exercises["Barbell Bicep Curl"], target: "3 × 10", rest_seconds: 90)
-slot!(pull_core, 4, exercise: exercises["Hanging Leg Raise"], target: "3 × 10", rest_seconds: 60, notes: "Slow, no swing.")
-slot!(pull_core, 5, exercise: exercises["Plank"], target: "3 × max time", rest_seconds: 60)
+# Monday — Pull/Core
+pull_core = Routine.find_or_create_by!(name: "Pull/Core")
+pull_core.update!(
+  notes: "Mondays. Straight sets. Warm up first.",
+  tags: %w[pull core strength],
+  preferred_frequency: "Mondays"
+)
+slot!(pull_core, 0, progression: pullups, target: "4 sets · current phase", rest_seconds: 120,
+      progression_note: "Pick your current phase; graduate when its criteria are met. Add a dead-hang set at the end.")
+slot!(pull_core, 1, exercise: exercises["One-arm Dumbbell Row"], target: "4 × 8/side", rest_seconds: 90,
+      notes: "Hand + knee on bench, flat back, pull to hip (not armpit), elbow tight, squeeze lat, full stretch.",
+      progression_note: "When 25s easy, add tempo (3s down, 1s pause at bottom).")
+slot!(pull_core, 2, exercise: exercises["TRX Inverted Row"], target: "3 × 10", rest_seconds: 60,
+      notes: "Body plank-straight, pull chest to handles, elbows ~45°, squeeze scaps.",
+      progression_note: "Feet flat → elevated on bench → pause at top.")
+slot!(pull_core, 3, exercise: exercises["Hanging Leg Raise"], target: "3 × 8–12", rest_seconds: 60,
+      notes: "No swing; initiate from the lower abs (posterior tilt first), control down.",
+      progression_note: "Tuck knees → straight leg to 90° → toes to bar → windshield wipers.")
+slot!(pull_core, 4, exercise: exercises["Pallof Press"], target: "3 × 10/side", rest_seconds: 45,
+      notes: "Band at chest height, press straight out, resist the rotation, hold 2s. Hips square.")
+slot!(pull_core, 5, exercise: exercises["Dead Hang"], target: "2 × max time", rest_seconds: 120,
+      notes: "Full grip, shoulders active. Build to 60s. Stop ~5s before failure to save grip for climbing.")
 
-zone2 = Routine.find_or_create_by!(name: "Zone 2 Cardio") do |r|
-  r.notes = "Conversational pace — keep HR in zone 2 the whole way."
-  r.tags = %w[cardio recovery]
-  r.preferred_frequency = "2–3×/week"
-end
-slot!(zone2, 0, exercise: exercises["Zone 2 Run"], target: "1 × 40 min", notes: "Nose-breathing pace.")
-slot!(zone2, 1, exercise: exercises["Stationary Bike"], target: "1 × 30 min", notes: "Alt for high-impact days — protect fingers/joints.")
-
-bouldering = Routine.find_or_create_by!(name: "Bouldering") do |r|
-  r.notes = "Session logs as an off-script workout + Health import; hangs are prehab."
-  r.tags = %w[climbing grip]
-  r.preferred_frequency = "2×/week"
-end
-slot!(bouldering, 0, exercise: exercises["Half-crimp Hang"], target: "5 × 10s", rest_seconds: 120, notes: "Warm, never to failure.")
-slot!(bouldering, 1, exercise: exercises["Open-hand Hang"], target: "5 × 10s", rest_seconds: 120)
-slot!(bouldering, 2, exercise: exercises["Bouldering"], target: "session", notes: "Climb by feel; log the session, not grades.")
+# Friday — Push/Legs/Antagonist
+push_legs = Routine.find_or_create_by!(name: "Push/Legs")
+push_legs.update!(
+  notes: "Fridays. Push / legs / antagonist. Warm up first.",
+  tags: %w[push legs strength],
+  preferred_frequency: "Fridays"
+)
+slot!(push_legs, 0, exercise: exercises["Dumbbell Bench Press"], target: "4 × 8", rest_seconds: 90,
+      notes: "DBs from chest, elbows ~45° (not flared), press up and slightly together, control to chest-touch.",
+      progression_note: "When 25s easy → single-arm floor press or tempo (3s down).")
+slot!(push_legs, 1, exercise: exercises["Dumbbell Goblet Squat"], target: "4 × 10", rest_seconds: 90,
+      notes: "DB vertical at chest, feet shoulder-width, sit back + down below parallel, knees track toes, drive heels.",
+      progression_note: "Tempo (3s down, 2s pause) → Bulgarian split squats.")
+slot!(push_legs, 2, exercise: exercises["Dumbbell Overhead Press"], target: "3 × 8", rest_seconds: 90,
+      notes: "Standing, DBs at shoulders, press straight up, don't over-arch, lock out with biceps by the ears.",
+      progression_note: "Tempo, then single-arm (adds anti-lateral core work).")
+slot!(push_legs, 3, exercise: exercises["Dumbbell Romanian Deadlift"], target: "3 × 10", rest_seconds: 90,
+      notes: "Soft knees, hinge at the hips (push butt back), DBs slide to just below the knees, flat back, squeeze glutes up.",
+      progression_note: "Tempo (3s down) — much harder without more weight.")
+slot!(push_legs, 4, exercise: exercises["Push-up"], target: "3 × AMRAP", rest_seconds: 60,
+      notes: "Hands slightly wider than shoulders, plank-straight, elbows ~45°, chest to floor, full lockout.",
+      progression_note: "Feet on bench (decline) → deficit (hands on DBs) → archer.")
+slot!(push_legs, 5, exercise: exercises["Face Pull"], target: "3 × 15", rest_seconds: 45,
+      notes: "Band at forehead height, pull to forehead, elbows high, externally rotate at the end (thumbs back). Non-negotiable for climber shoulders.")

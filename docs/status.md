@@ -14,10 +14,11 @@
 [`data_model.md`](./data_model.md).
 
 ### Library seed — implemented
-`db/seeds.rb` now ships a **starter library** (idempotent): 18 exercises across
-modalities/muscle groups, the "Pull-ups" progression (3 phases), and 3 routines
-(Pull/Core, Zone 2 Cardio, Bouldering) with ordered slots — one slot is a
-progression, exercising the XOR path. Freely editable in-app; not authoritative.
+`db/seeds.rb` (idempotent) seeds the current 4-week program's two **strength**
+days: **Pull/Core** (Mon) and **Push/Legs** (Fri), 14 exercises, and the
+"Pull-ups" progression (3 phases) with real targets/graduation criteria. Cardio
+(Wed) and bouldering (Tu/Th) are **not** seeded — they arrive via the Apple
+Health import. Freely editable in-app.
 
 ### Library browse — implemented (read-only)
 The first feature vertical, and the **copy-me pattern** for the next ones:
