@@ -40,6 +40,32 @@ RSpec.describe "Api::V1::HealthImports", type: :request do
     expect(response).to have_http_status(:unauthorized)
   end
 
+  describe "integration event logging" do
+    it "records one event per push, capturing per-workout outcomes" do
+      expect { post_import(payload(id: "E1"), token: aaron.api_token) }
+        .to change { IntegrationEvent.count }.by(1)
+
+      event = IntegrationEvent.last
+      expect(event).to have_attributes(kind: "health.push", status: "ok", user: aaron, direction: "inbound")
+      expect(event.metadata).to include("received" => 1, "created" => 1, "skipped" => 0)
+      expect(event.metadata["items"].first).to include("name" => "Outdoor Walk", "outcome" => "created")
+    end
+
+    it "logs an unauthorized push (no user)" do
+      expect { post_import(payload, token: "nope") }.to change { IntegrationEvent.count }.by(1)
+      expect(IntegrationEvent.last).to have_attributes(status: "unauthorized", user: nil)
+    end
+
+    it "logs a malformed-JSON push" do
+      post "/api/v1/health_imports",
+        params: "{not json",
+        headers: { "Authorization" => "Bearer #{aaron.api_token}", "Content-Type" => "application/json" }
+
+      expect(response).to have_http_status(:bad_request)
+      expect(IntegrationEvent.last).to have_attributes(kind: "health.push", status: "bad_request", user: aaron)
+    end
+  end
+
   it "materializes a workout from a pushed session" do
     expect {
       post_import(payload, token: aaron.api_token)

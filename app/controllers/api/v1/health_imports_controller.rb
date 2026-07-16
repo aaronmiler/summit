@@ -27,14 +27,21 @@ module Api
       def create
         body = JSON.parse(request.raw_post)
         workouts = Array(body.dig("data", "workouts"))
-        outcomes = workouts.map { |w| ingest_workout(w) }
+        items = workouts.map { |w| ingest_workout(w) }
+        created = items.count { |i| i[:outcome] == :created }
+        skipped = items.count { |i| i[:outcome] == :skipped } # already imported (dedupe)
+
+        log_push(
+          status: IntegrationEvent::OK,
+          summary: "#{workouts.size} workout(s): #{created} created, #{skipped} skipped",
+          metadata: { received: workouts.size, created: created, skipped: skipped, items: items }
+        )
 
         render json: {
-          workouts_received: workouts.size,
-          created: outcomes.count(:created),
-          skipped: outcomes.count(:skipped) # already imported (dedupe)
+          workouts_received: workouts.size, created: created, skipped: skipped
         }, status: :created
-      rescue JSON::ParserError
+      rescue JSON::ParserError => e
+        log_push(status: "bad_request", summary: "invalid JSON", error: e.message)
         render json: { error: "invalid JSON" }, status: :bad_request
       end
 
@@ -42,14 +49,29 @@ module Api
 
       def authenticate_token!
         @token_user = authenticate_with_http_token { |token, _| User.find_by(api_token: token) }
-        head :unauthorized unless @token_user
+        return if @token_user
+
+        log_push(status: "unauthorized", summary: "bad or missing token")
+        head :unauthorized
+      end
+
+      # Record one row per inbound push so the integration is monitorable after
+      # the fact — which sessions arrived and whether each was created or deduped.
+      def log_push(status:, summary: nil, metadata: {}, error: nil)
+        IntegrationEvent.record!(
+          kind: "health.push", source: "health_auto_export", direction: "inbound",
+          user: @token_user, status: status, summary: summary, metadata: metadata,
+          error: error, remote_ip: request.remote_ip
+        )
       end
 
       # One workout -> a HealthImport + the Workout it materializes. Idempotent on
       # (user, external_id) so HAE re-sending overlapping windows is a no-op.
+      # Returns a per-item detail hash (its `outcome` drives the push counts).
       def ingest_workout(workout)
         external_id = workout["id"].presence
-        return :skipped if external_id && @token_user.health_imports.exists?(external_id: external_id)
+        detail = { name: workout["name"], start: workout["start"], external_id: external_id }
+        return detail.merge(outcome: :skipped) if external_id && @token_user.health_imports.exists?(external_id: external_id)
 
         started = parse_time(workout["start"]) || Time.current
         # Imports are historical: always finished, so they never become the
@@ -71,9 +93,9 @@ module Api
           routine_id: nil, started_at: started, finished_at: finished, notes: import.summary
         )
         import.update!(workout: workout_record)
-        :created
+        detail.merge(outcome: :created)
       rescue ActiveRecord::RecordNotUnique
-        :skipped # lost a race on the dedupe index
+        detail.merge(outcome: :skipped) # lost a race on the dedupe index
       end
 
       # HAE quantities are { "qty": Number, "units": "..." }; pull the number.

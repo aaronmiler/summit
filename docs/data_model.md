@@ -151,6 +151,24 @@ longer requires a `Workout`.
   — workouts ingest; the per-day health picture is deferred (see
   `open_questions.md`).
 
+**`IntegrationEvent`** — one durable row per interaction with an external
+system (added 2026-07-16). A **general** audit log, not health-specific: inbound
+webhooks (Health Auto Export pushes) today, outbound LLM calls (workout
+building, nutrition parsing) as those land. Resolves open-question #2.
+- Fields: `user_id` (**nullable** — unauth/system events have none), `kind`
+  (dotted namespace: `health.push`, `llm.workout_build`, `llm.nutrition_parse`
+  — the discriminator, so new event types need no migration), `source`
+  (`health_auto_export`, `anthropic`, …), `direction` (`inbound`/`outbound`),
+  `status` (`ok`/`error`/`unauthorized`/`bad_request`), `summary` (one-line),
+  `metadata` (jsonb — kind-specific detail: push counts + per-item outcomes;
+  model + token usage), `duration_ms`, `error`, `remote_ip`.
+- **The seam is `IntegrationEvent.record!`** — any integration logs itself in one
+  call, and monitoring is a query over `kind` + `status`. It **never raises**:
+  audit logging must not take down the thing it observes.
+- **Not for domain data.** Parsed results still live in their own tables
+  (`HealthImport.raw`, `Meal`/`FoodEntry`) — this is the interaction log *around*
+  them (who called, when, cost, success), not a second copy of the payload.
+
 ### Nutrition ("napkin-style")
 
 **`Meal`** — a freeform entry; the raw text *is* the artifact.
@@ -199,10 +217,10 @@ longer requires a `Workout`.
    HR / calories / duration into the summary columns? (Leaning: raw first, parse
    when the flow exists — summary columns nullable so no migration is needed when
    parsing arrives.)
-2. **LLM audit / re-parse table.** The raw-artifact-next-to-parse pattern
-   (Meal→FoodEntry, HealthImport) may be enough; a dedicated `llm_request` audit
-   table (for re-parsing / debugging generations) is deferred until there's a
-   concrete need.
+2. ~~**LLM audit / re-parse table.**~~ **Resolved 2026-07-16** →
+   `IntegrationEvent` (see Log). One general interaction log covers inbound
+   webhooks and outbound LLM calls; parsed results still live in their own
+   tables, this logs the interaction around them.
 3. **Cross-user visibility** (progress, logs, meals) is a *policy / query*
    question, not schema — `Workout` and every derived phase are already per-user.
    Decide when the UI needs it.
