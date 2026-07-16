@@ -39,4 +39,12 @@ Rails.application.routes.draw do
 
   # HTML shell that boots the React app.
   root "pages#index"
+
+  # SPA fallback: any other HTML GET (a deep-linked client route like /history
+  # refreshed or opened cold) renders the same shell, so react-router can take
+  # over. Constrained to HTML requests that aren't the API or framework paths,
+  # so unknown /api calls and missing assets still 404 instead of getting HTML.
+  get "*path", to: "pages#index", constraints: ->(req) {
+    req.format.html? && !req.path.start_with?("/api", "/rails", "/up")
+  }
 end

@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import type { Prefill } from '~/types'
 import type { Widget } from '~/lib/modality'
+import HoldTimer from './HoldTimer'
 
 // The numbers a logged set carries (before the exercise/slot context is added).
 export type SetFields = {
@@ -27,18 +28,28 @@ export default function SetForm({
 }) {
   const [reps, setReps] = useState(str(prefill?.reps))
   const [weight, setWeight] = useState(str(prefill?.weight))
-  const [seconds, setSeconds] = useState(str(prefill?.durationSeconds))
   const [minutes, setMinutes] = useState(str(secondsToMinutes(prefill?.durationSeconds)))
   const [rpe, setRpe] = useState(str(prefill?.rpe))
   const [notes, setNotes] = useState('')
+
+  // A hold (hangboard) is its own self-contained widget — an active timer that
+  // logs directly, not a number to type into the shared form.
+  if (widget === 'timed') {
+    return (
+      <HoldTimer
+        seedTarget={prefill?.durationSeconds ?? null}
+        pending={pending}
+        onLog={(seconds) => onLog({ reps: null, weight: null, durationSeconds: seconds, rpe: null, notes: null })}
+      />
+    )
+  }
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault()
     onLog({
       reps: widget === 'weighted' || widget === 'reps' ? num(reps) : null,
       weight: widget === 'weighted' || widget === 'reps' ? num(weight) : null,
-      durationSeconds:
-        widget === 'timed' ? num(seconds) : widget === 'duration' ? minutesToSeconds(num(minutes)) : null,
+      durationSeconds: widget === 'duration' ? minutesToSeconds(num(minutes)) : null,
       rpe: widget === 'weighted' ? num(rpe) : null,
       notes: widget === 'duration' ? notes.trim() || null : null,
     })
@@ -59,11 +70,6 @@ export default function SetForm({
       {widget === 'weighted' && (
         <Field label="rpe">
           <input className="form-input" type="number" inputMode="decimal" step="0.5" value={rpe} onChange={(e) => setRpe(e.target.value)} />
-        </Field>
-      )}
-      {widget === 'timed' && (
-        <Field label="seconds">
-          <input className="form-input" type="number" inputMode="numeric" value={seconds} onChange={(e) => setSeconds(e.target.value)} />
         </Field>
       )}
       {widget === 'duration' && (

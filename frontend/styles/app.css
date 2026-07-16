@@ -328,6 +328,119 @@
   margin-left: auto;
 }
 
+/* The hangboard hold timer: a single thumb-first control stack — adjuster bar,
+   big box, full-width primary button. */
+.hold-timer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+/* [−] encoder [+] */
+.adjuster {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+/* Jog-wheel encoder: scrolling ticks under a fixed center line. Drag left/right
+   for a relative delta. touch-action:none so the drag doesn't pan the page. */
+.encoder {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  height: 2.5rem;
+  background-color: #fff;
+  border: 1px solid var(--fog);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  cursor: ew-resize;
+  touch-action: none;
+  user-select: none;
+}
+
+.encoder--disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.encoder__ticks {
+  position: absolute;
+  inset: 0;
+  background-image:
+    repeating-linear-gradient(90deg, var(--fog) 0 1px, transparent 1px 10px),
+    repeating-linear-gradient(90deg, var(--driftwood) 0 2px, transparent 2px 50px);
+  background-position-x: var(--tick-offset, 0);
+}
+
+.encoder__cursor {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
+  transform: translateX(-1px);
+  background-color: var(--app-accent);
+}
+
+.encoder:focus-visible {
+  outline: 2px solid var(--interactive-focus);
+  outline-offset: 2px;
+}
+
+.adjuster__step {
+  flex: none;
+  width: 2.5rem;
+  height: 2.5rem;
+  font-size: 1.25rem;
+  line-height: 1;
+  color: var(--pnw-ink);
+  background-color: #fff;
+  border: 1px solid var(--fog);
+  border-radius: var(--radius-md);
+}
+
+.adjuster__step:disabled {
+  opacity: 0.4;
+}
+
+/* The big central number box. */
+.hold-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  padding: var(--space-5);
+  background-color: var(--overcast);
+  border: 1px solid var(--fog);
+  border-radius: var(--radius-lg);
+}
+
+.hold-box__big {
+  font-size: 3.5rem;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--pnw-ink);
+}
+
+.hold-box--over .hold-box__big {
+  color: var(--app-accent);
+}
+
+.hold-timer__primary {
+  width: 100%;
+}
+
+.hold-timer__redo {
+  align-self: center;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
 /* ---- History ---------------------------------------------------------- */
 
 .history-list {
