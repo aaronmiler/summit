@@ -14,7 +14,7 @@ RSpec.describe "Api::V1::Exercises", type: :request do
 
       expect(response).to have_http_status(:ok)
       names = response.parsed_body.map { |e| e["name"] }
-      expect(names).to eq(["Dumbbell Row", "Pull-up", "Zercher Squat"])
+      expect(names).to eq([ "Dumbbell Row", "Pull-up", "Zercher Squat" ])
       expect(response.parsed_body.first).to eq(
         "id" => Exercise.find_by(name: "Dumbbell Row").id,
         "name" => "Dumbbell Row",

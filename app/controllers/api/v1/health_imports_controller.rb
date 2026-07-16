@@ -89,7 +89,7 @@ module Api
       end
 
       def summary(workout)
-        bits = [workout["name"]]
+        bits = [ workout["name"] ]
         if (d = qty(workout["distance"]))
           bits << "#{d} #{workout.dig('distance', 'units') || 'mi'}"
         end

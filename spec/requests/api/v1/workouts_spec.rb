@@ -101,7 +101,7 @@ RSpec.describe "Api::V1::Workouts", type: :request do
 
       # Never logged -> current phase is the first (position 0).
       expect(slot_payload["progression"]["current_phase_position"]).to eq(0)
-      expect(slot_payload["progression"]["phases"].map { |p| p["id"] }).to eq([phase0.id, phase1.id])
+      expect(slot_payload["progression"]["phases"].map { |p| p["id"] }).to eq([ phase0.id, phase1.id ])
 
       # Log against phase 1 -> advancement is just the Log, no state row.
       post "/api/v1/workouts/#{workout_id}/set_logs",
@@ -127,7 +127,7 @@ RSpec.describe "Api::V1::Workouts", type: :request do
 
       expect(response).to have_http_status(:ok)
       ids = response.parsed_body.map { |w| w["id"] }
-      expect(ids).to eq([recent.id, old.id]) # newest first
+      expect(ids).to eq([ recent.id, old.id ]) # newest first
       expect(response.parsed_body.first).to include(
         "id" => recent.id, "set_count" => 2, "routine" => { "id" => routine.id, "name" => "Pull" },
       )
@@ -156,8 +156,8 @@ RSpec.describe "Api::V1::Workouts", type: :request do
 
       expect(response).to have_http_status(:ok)
       groups = response.parsed_body["exercises"]
-      expect(groups.map { |g| g["exercise"]["name"] }).to eq(["Barbell Row", "Curl"])
-      expect(groups.first["sets"].map { |s| s["set_number"] }).to eq([1, 2])
+      expect(groups.map { |g| g["exercise"]["name"] }).to eq([ "Barbell Row", "Curl" ])
+      expect(groups.first["sets"].map { |s| s["set_number"] }).to eq([ 1, 2 ])
       expect(groups.first["sets"].first).to include("reps" => 8, "weight" => 135.0)
     end
 

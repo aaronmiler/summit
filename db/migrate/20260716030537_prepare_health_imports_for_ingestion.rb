@@ -12,7 +12,7 @@ class PrepareHealthImportsForIngestion < ActiveRecord::Migration[8.1]
     add_column :health_imports, :raw, :jsonb              # the verbatim payload, lossless
 
     # Dedupe: a given source event lands once per user (re-sends are no-ops).
-    add_index :health_imports, [:user_id, :external_id], unique: true,
+    add_index :health_imports, [ :user_id, :external_id ], unique: true,
               where: "external_id IS NOT NULL", name: "index_health_imports_on_user_and_external_id"
   end
 end

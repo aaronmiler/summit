@@ -12,7 +12,7 @@ RSpec.describe "Api::V1::Routines", type: :request do
       get "/api/v1/routines"
 
       expect(response).to have_http_status(:ok)
-      expect(response.parsed_body.map { |r| r["name"] }).to eq(["Pull/Core", "Zone 2 Cardio"])
+      expect(response.parsed_body.map { |r| r["name"] }).to eq([ "Pull/Core", "Zone 2 Cardio" ])
       expect(response.parsed_body.first).to include(
         "name" => "Pull/Core",
         "tags" => %w[pull core],

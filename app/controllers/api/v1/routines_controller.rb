@@ -11,7 +11,7 @@ module Api
 
       def show
         routine = Routine.includes(
-          routine_exercises: [:exercise, { progression: { progression_phases: :exercise } }]
+          routine_exercises: [ :exercise, { progression: { progression_phases: :exercise } } ]
         ).find(params[:id])
 
         render json: routine
