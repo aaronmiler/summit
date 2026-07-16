@@ -1,0 +1,36 @@
+# Production stack for the homelab (tars). Pulls the image CI publishes to GHCR
+# and runs it behind Nginx Proxy Manager (NPM terminates TLS and forwards to
+# SUMMIT_PORT; the app trusts the proxy via assume_ssl, so it stays HTTP here).
+#
+# Postgres already runs on tars — point DATABASE_URL at it. Summit must be able
+# to reach that host: either join the shared Docker network (see `networks`
+# below) or use a DATABASE_URL host the container can resolve.
+#
+# Required env (.env beside this file, or tars secrets):
+#   RAILS_MASTER_KEY  — contents of config/master.key
+#   DATABASE_URL      — postgres://summit:PASSWORD@<pg-host>:5432/summit_production
+# Optional:
+#   SUMMIT_IMAGE  (default ghcr.io/aaronmiler/summit:latest — set to your GHCR owner)
+#   SUMMIT_PORT   (default 8848 — Everest's summit, metres; point NPM here)
+#
+# First boot: bin/docker-entrypoint runs `db:prepare` (migrations, and seeds on a
+# fresh database — the two users + starter library).
+
+services:
+  summit:
+    image: ${SUMMIT_IMAGE:-ghcr.io/aaronmiler/summit:latest}
+    restart: unless-stopped
+    environment:
+      RAILS_MASTER_KEY: ${RAILS_MASTER_KEY:?set RAILS_MASTER_KEY}
+      DATABASE_URL: ${DATABASE_URL:?set DATABASE_URL}
+    ports:
+      # host:container — Thruster serves on 80; NPM proxies to ${SUMMIT_PORT}.
+      - "${SUMMIT_PORT:-8848}:80"
+    # If the shared Postgres is a Docker container, join its network so the
+    # DATABASE_URL host resolves. Set the name and uncomment (both blocks).
+    # networks:
+    #   - homelab
+
+# networks:
+#   homelab:
+#     external: true

@@ -86,6 +86,5 @@ test:
 #
 production:
   <<: *default
-  database: summit_production
-  username: summit
-  password: <%= ENV["SUMMIT_DATABASE_PASSWORD"] %>
+  # Connect via a single DATABASE_URL (host/user/password/db all in the URL).
+  url: <%= ENV["DATABASE_URL"] %>

@@ -30,6 +30,13 @@
 /tmp/storage/*
 !/tmp/storage/.keep
 
+# Ignore JS deps and frontend build output — rebuilt fresh in the image
+# (yarn install + assets:precompile), so local copies must not clobber them.
+/node_modules
+/public/vite
+/public/vite-dev
+/public/assets
+
 # Ignore CI service files.
 /.github
 
