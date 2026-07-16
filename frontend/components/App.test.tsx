@@ -50,7 +50,8 @@ test('shows the picker with no session, then the nav after picking a user', asyn
   await waitFor(() =>
     expect(screen.getByRole('link', { name: 'Library' })).toBeInTheDocument(),
   )
-  expect(create).toHaveBeenCalledWith({ data: { user_id: 2 } })
+  // camelCase on the frontend; the client serializes to user_id on the wire.
+  expect(create).toHaveBeenCalledWith({ data: { userId: 2 } })
 })
 
 test('renders the nav directly when a user is already in session', async () => {

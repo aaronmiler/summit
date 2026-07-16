@@ -14,6 +14,12 @@ module Api
       def current_user
         @current_user ||= User.find_by(id: session[:user_id])
       end
+
+      # Guard for endpoints that act *as* the picked user (logging). No user in
+      # the session cookie -> nothing to act on.
+      def require_current_user!
+        head :unauthorized unless current_user
+      end
     end
   end
 end

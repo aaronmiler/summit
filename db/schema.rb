@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_15_153556) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_16_030537) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -66,15 +66,23 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_15_153556) do
   end
 
   create_table "health_imports", force: :cascade do |t|
+    t.string "activity_type"
     t.integer "avg_hr"
     t.integer "calories"
     t.decimal "confidence", precision: 3, scale: 2
     t.datetime "created_at", null: false
+    t.decimal "distance", precision: 8, scale: 2
     t.integer "duration_seconds"
+    t.string "external_id"
     t.text "parse_notes"
+    t.jsonb "raw"
+    t.datetime "recorded_at"
     t.string "source"
     t.datetime "updated_at", null: false
-    t.bigint "workout_id", null: false
+    t.bigint "user_id", null: false
+    t.bigint "workout_id"
+    t.index ["user_id", "external_id"], name: "index_health_imports_on_user_and_external_id", unique: true, where: "(external_id IS NOT NULL)"
+    t.index ["user_id"], name: "index_health_imports_on_user_id"
     t.index ["workout_id"], name: "index_health_imports_on_workout_id"
   end
 
@@ -154,6 +162,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_15_153556) do
   end
 
   create_table "users", force: :cascade do |t|
+    t.string "api_token", null: false
     t.datetime "created_at", null: false
     t.text "equipment"
     t.text "goals"
@@ -161,6 +170,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_15_153556) do
     t.text "notes"
     t.text "preferences"
     t.datetime "updated_at", null: false
+    t.index ["api_token"], name: "index_users_on_api_token", unique: true
   end
 
   create_table "workouts", force: :cascade do |t|
@@ -179,6 +189,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_15_153556) do
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "food_entries", "meals"
+  add_foreign_key "health_imports", "users"
   add_foreign_key "health_imports", "workouts"
   add_foreign_key "meals", "users"
   add_foreign_key "progression_phases", "exercises"

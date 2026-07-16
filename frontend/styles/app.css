@@ -32,3 +32,376 @@
   flex-wrap: wrap;
   justify-content: center;
 }
+
+/* ---- Library ---------------------------------------------------------- */
+
+/* Landing: heading on the left, "browse exercises" link on the right. */
+.library-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+/* Routine cards are links; kill the anchor defaults so the card reads clean. */
+.library-card {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+
+/* A wrapping row of badges (frequency + tags). */
+.badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+}
+
+/* Routine detail: the ordered slots. */
+.slot-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.slot-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.slot-name {
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.slot-tag {
+  font-weight: 400;
+}
+
+.slot-target {
+  font-variant-numeric: tabular-nums;
+  color: var(--timber);
+  white-space: nowrap;
+}
+
+.slot-meta {
+  display: flex;
+  gap: var(--space-4);
+  margin-top: var(--space-1);
+}
+
+.slot-note {
+  margin-top: var(--space-2);
+}
+
+/* The progression ladder inside a slot. */
+.phase-list {
+  list-style: none;
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--fog);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.phase {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.phase-name {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+/* Exercise browser: flat rows grouped by muscle group. */
+.exercise-list {
+  list-style: none;
+}
+
+.exercise-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--fog);
+}
+
+.exercise-name {
+  font-weight: 500;
+}
+
+/* ---- Logging (Today) -------------------------------------------------- */
+
+/* Start-a-workout cards reuse the library card but are <button>s. */
+.start-card {
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+
+.session-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+/* Overview: the routine as a tappable checklist. */
+.overview-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.overview-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background-color: #fff;
+  border: 1px solid var(--fog);
+  border-radius: var(--radius-md);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: box-shadow 0.15s ease;
+}
+
+.overview-row:hover {
+  box-shadow: var(--shadow-2);
+}
+
+.overview-name {
+  font-weight: 500;
+}
+
+.overview-target {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}
+
+/* A done/todo indicator: outline ring when empty, filled green when logged. */
+.status-dot {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid var(--driftwood);
+}
+
+.status-dot--done {
+  background-color: var(--cascadia-green);
+  border-color: var(--cascadia-green);
+}
+
+/* Focused step: back link + progress, jumpable dots, then prev/next. */
+.step-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-3);
+}
+
+.step-back {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+}
+
+.step-dots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.step-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--driftwood);
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+}
+
+.step-dot--done {
+  background-color: var(--cascadia-green);
+  border-color: var(--cascadia-green);
+}
+
+.step-dot--current {
+  border-color: var(--app-accent);
+  box-shadow: 0 0 0 2px var(--app-accent);
+}
+
+.step-nav {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+}
+
+/* Progression phase picker: the ladder as selectable chips. */
+.phase-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+/* Sets logged into a slot this session. */
+.logged-sets {
+  list-style: none;
+  margin-top: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.logged-set {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--fog);
+}
+
+.logged-set__n {
+  min-width: 2ch;
+}
+
+.logged-set__val {
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+
+.logged-set__del {
+  margin-left: auto;
+  line-height: 1;
+}
+
+/* The modality-driven set form: a wrapping row of small labeled inputs. */
+.set-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.set-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.set-field .form-input {
+  width: 6rem;
+}
+
+.set-form__log {
+  margin-left: auto;
+}
+
+/* ---- History ---------------------------------------------------------- */
+
+.history-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.history-row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background-color: #fff;
+  border: 1px solid var(--fog);
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  color: inherit;
+  transition: box-shadow 0.15s ease;
+}
+
+.history-row:hover {
+  box-shadow: var(--shadow-2);
+}
+
+.history-date {
+  min-width: 4rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--timber);
+}
+
+.history-name {
+  font-weight: 500;
+}
+
+.history-meta {
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+/* ---- Apple Health setup ----------------------------------------------- */
+
+.setup-steps {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  margin: 0 0 var(--space-8);
+  padding-left: var(--space-5);
+}
+
+.setup-steps li {
+  padding-left: var(--space-2);
+}
+
+/* A copyable value: label, monospace value, copy button. */
+.copy-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.copy-row__label {
+  min-width: 3rem;
+}
+
+.copy-row__value {
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  white-space: nowrap;
+  padding: var(--space-2) var(--space-3);
+  background-color: var(--overcast);
+  border: 1px solid var(--fog);
+  border-radius: var(--radius-sm);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.8125rem;
+}
+
+.setup-file {
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--fog);
+}

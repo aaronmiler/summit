@@ -129,17 +129,27 @@ the everyday sense — the event, not the plan.)
   (any workout). This is why loads are personalized *without* per-user prescription
   rows — personalization is derived from history, not stored on the plan.
 
-**`HealthImport`** — supplemental data attached to a `Workout` (e.g. an Apple
-Fitness warmup, an Apple Health screenshot).
-- Fields: `workout_id`, raw artifact (screenshot/file via ActiveStorage), optional
-  parsed summary (`calories`, `avg_hr`, `duration_seconds`, `source`),
+**`HealthImport`** — a pushed Apple Health / Fitness event (or a screenshot).
+**First-class per-user event** (updated 2026-07-15): the import is primary and a
+`Workout` is *inferred/materialized* from it — the dependency flipped, so it no
+longer requires a `Workout`.
+- Fields: `user_id`, `workout_id` (**nullable** — set when a session is
+  materialized), `source`, `external_id` (HealthKit id, for **idempotent**
+  re-imports), `activity_type`, `recorded_at`, parsed summary (`calories`,
+  `avg_hr`, `distance`, `duration_seconds`), `raw` (jsonb — the **verbatim
+  payload**, lossless), raw artifact (screenshot via ActiveStorage),
   `parse_notes`/`confidence`.
-- Keeps the **raw artifact next to the parse** — same provenance pattern as
-  nutrition. (Parse depth: see Still open.)
-- **Climbing lands here.** A Redpoint / Apple Health climbing session is an
-  off-script `Workout` (nullable `routine_id`) with a `HealthImport` attached —
-  duration/calories in the summary, no grade fields (V-scale is a vanity metric,
-  out of scope).
+- **Ingestion:** `POST /api/v1/health_imports` (Bearer-token, headless) accepts
+  Health Auto Export's v2 payload; each workout materializes an off-script,
+  already-finished `Workout`. Keeps the **raw next to the parse** — parse off
+  `raw`, re-parse anytime.
+- **Climbing lands here.** An Apple Health climbing session imports as an
+  off-script `Workout` (nullable `routine_id`) materialized from a
+  `HealthImport` — duration/calories in the summary, no grade fields (V-scale is
+  a vanity metric, out of scope).
+- **Metrics** (daily rollups: energy in/out, HR, effort) are **not** modeled yet
+  — workouts ingest; the per-day health picture is deferred (see
+  `open_questions.md`).
 
 ### Nutrition ("napkin-style")
 

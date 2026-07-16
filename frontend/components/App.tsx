@@ -3,6 +3,13 @@ import { useSession } from '~/api/queries'
 import UserPicker from './UserPicker'
 import Layout from './Layout'
 import Placeholder from './Placeholder'
+import Today from './Today'
+import History from './History'
+import WorkoutDetail from './WorkoutDetail'
+import HealthImportSetup from './HealthImportSetup'
+import Library from './Library'
+import RoutineDetail from './RoutineDetail'
+import Exercises from './Exercises'
 
 // The shell. Identity gates everything: no user in session -> picker; otherwise
 // the nav + routed screens. Feature screens are stubs for now.
@@ -20,8 +27,13 @@ export default function App() {
   return (
     <Layout user={user}>
       <Routes>
-        <Route path="/" element={<Placeholder title="Today" />} />
-        <Route path="/library" element={<Placeholder title="Library" />} />
+        <Route path="/" element={<Today />} />
+        <Route path="/history" element={<History />} />
+        <Route path="/history/:id" element={<WorkoutDetail />} />
+        <Route path="/settings/health-import" element={<HealthImportSetup />} />
+        <Route path="/library" element={<Library />} />
+        <Route path="/library/exercises" element={<Exercises />} />
+        <Route path="/library/routines/:id" element={<RoutineDetail />} />
         <Route path="/nutrition" element={<Placeholder title="Nutrition" />} />
       </Routes>
     </Layout>

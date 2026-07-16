@@ -21,6 +21,9 @@ export default function Layout({ user, children }: { user: User; children: React
             </NavLink>
           </li>
           <li>
+            <NavLink to="/history">History</NavLink>
+          </li>
+          <li>
             <NavLink to="/library">Library</NavLink>
           </li>
           <li>
