@@ -34,6 +34,10 @@ Rails.application.routes.draw do
       resources :health_imports, only: %i[create] do
         get :setup, on: :collection
       end
+
+      # Read-only monitoring feed over the integration audit log (session-authed,
+      # shows all events). Plain fetch on the frontend, so it isn't exported.
+      resources :integration_events, only: %i[index]
     end
   end
 

@@ -525,3 +525,84 @@
   padding-top: var(--space-5);
   border-top: 1px solid var(--fog);
 }
+
+/* ---- Integration monitoring (Sync activity) --------------------------- */
+
+/* A small stack of settings links on the right of a page header. */
+.header-links {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-1);
+  white-space: nowrap;
+}
+
+.event-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.event-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background-color: #fff;
+  border: 1px solid var(--fog);
+  border-radius: var(--radius-md);
+}
+
+.event-dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  margin-top: 6px;
+  border-radius: 50%;
+}
+
+.event-dot--ok {
+  background-color: var(--portland-green);
+}
+
+.event-dot--bad {
+  background-color: var(--destructive);
+}
+
+.event-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.event-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.event-kind {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.event-status {
+  text-transform: uppercase;
+}
+
+.event-error {
+  color: var(--destructive);
+}
+
+.event-meta {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  white-space: nowrap;
+}

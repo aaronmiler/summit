@@ -179,3 +179,22 @@ export type HealthImportSetup = {
   headerKey: string
   headerValue: string
 }
+
+// --- Integration monitoring ---------------------------------------------
+
+// One row of the integration audit log (GET /api/v1/integration_events): an
+// inbound push or an outbound LLM call. `kind` is a dotted namespace and
+// `metadata` is kind-specific, so this type stays stable as event types grow.
+export type IntegrationEvent = {
+  id: number
+  kind: string
+  source: string | null
+  direction: string | null
+  status: string
+  summary: string | null
+  metadata: Record<string, unknown>
+  durationMs: number | null
+  error: string | null
+  user: string | null // the user's name, or null for system/unauth rows
+  createdAt: string
+}

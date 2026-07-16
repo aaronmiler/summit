@@ -27,6 +27,7 @@ import type {
   WorkoutSummary,
   WorkoutDetail,
   HealthImportSetup,
+  IntegrationEvent,
 } from '~/types'
 
 // The current user (from the session cookie), or null before one is picked.
@@ -196,6 +197,36 @@ export function useHealthImportSetup() {
       if (!res.ok) throw new Error('Failed to load setup')
       const data = await res.json()
       return { url: data.url, headerKey: data.header_key, headerValue: data.header_value }
+    },
+  })
+}
+
+// --- Integration monitoring ---------------------------------------------
+
+// The integration audit log, newest first (the Sync activity page). Plain fetch
+// (not a js-from-routes helper), so map snake_case -> camelCase by hand.
+export function useIntegrationEvents() {
+  return useQuery({
+    queryKey: ['integration-events'],
+    queryFn: async (): Promise<IntegrationEvent[]> => {
+      const res = await fetch('/api/v1/integration_events', { credentials: 'same-origin' })
+      if (!res.ok) throw new Error('Failed to load integration events')
+      const data = await res.json()
+      return data.map(
+        (e: Record<string, unknown>): IntegrationEvent => ({
+          id: e.id as number,
+          kind: e.kind as string,
+          source: e.source as string | null,
+          direction: e.direction as string | null,
+          status: e.status as string,
+          summary: e.summary as string | null,
+          metadata: (e.metadata as Record<string, unknown>) ?? {},
+          durationMs: e.duration_ms as number | null,
+          error: e.error as string | null,
+          user: e.user as string | null,
+          createdAt: e.created_at as string,
+        }),
+      )
     },
   })
 }

@@ -7,6 +7,7 @@ import Today from './Today'
 import History from './History'
 import WorkoutDetail from './WorkoutDetail'
 import HealthImportSetup from './HealthImportSetup'
+import Integrations from './Integrations'
 import Library from './Library'
 import RoutineDetail from './RoutineDetail'
 import Exercises from './Exercises'
@@ -31,6 +32,7 @@ export default function App() {
         <Route path="/history" element={<History />} />
         <Route path="/history/:id" element={<WorkoutDetail />} />
         <Route path="/settings/health-import" element={<HealthImportSetup />} />
+        <Route path="/settings/integrations" element={<Integrations />} />
         <Route path="/library" element={<Library />} />
         <Route path="/library/exercises" element={<Exercises />} />
         <Route path="/library/routines/:id" element={<RoutineDetail />} />

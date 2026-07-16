@@ -13,9 +13,14 @@ export default function History() {
     <section>
       <div className="library-header mb-6">
         <h1 className="page-heading text-green">History</h1>
-        <Link to="/settings/health-import" className="text-accent">
-          Connect Apple Health →
-        </Link>
+        <div className="header-links">
+          <Link to="/settings/integrations" className="text-accent">
+            Sync activity →
+          </Link>
+          <Link to="/settings/health-import" className="text-accent">
+            Connect Apple Health →
+          </Link>
+        </div>
       </div>
 
       {workouts?.length ? (
