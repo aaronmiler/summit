@@ -91,6 +91,7 @@ html {
   font-size: 16px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
 }
 
 body {
@@ -99,6 +100,8 @@ body {
   line-height: 1.65;
   color: var(--pnw-ink);
   background-color: var(--cascadia-snow);
+  overflow-x: hidden;
+  width: 100%;
 }
 
 /* ========================================
@@ -227,6 +230,19 @@ body {
 
 .nav-bar .nav-links a.active {
   border-bottom-color: var(--nav-active);
+}
+
+@media (max-width: 640px) {
+  .nav-bar {
+    padding: var(--space-3) var(--space-4);
+    gap: var(--space-4);
+  }
+  .nav-bar .nav-links {
+    gap: var(--space-4);
+  }
+  .nav-bar .nav-links a {
+    font-size: 0.8125rem;
+  }
 }
 
 /* Blue variant */
