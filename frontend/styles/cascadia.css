@@ -237,6 +237,9 @@ body {
     padding: var(--space-3) var(--space-4);
     gap: var(--space-4);
   }
+  .nav-bar .app-name {
+    display: none;
+  }
   .nav-bar .nav-links {
     gap: var(--space-4);
   }
