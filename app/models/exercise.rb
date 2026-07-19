@@ -3,6 +3,7 @@ class Exercise < ApplicationRecord
   enum :modality, {
     barbell: "barbell",
     dumbbell: "dumbbell",
+    kettlebell: "kettlebell",
     machine: "machine",
     bodyweight: "bodyweight",
     band: "band",

@@ -8,6 +8,7 @@ export function widgetFor(modality: Modality): Widget {
   switch (modality) {
     case 'barbell':
     case 'dumbbell':
+    case 'kettlebell':
     case 'machine':
       return 'weighted' // reps + weight (+ rpe)
     case 'bodyweight':

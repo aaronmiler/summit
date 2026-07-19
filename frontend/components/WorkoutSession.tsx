@@ -1,9 +1,36 @@
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import type { Workout, WorkoutSlot } from '~/types'
 import { useDeleteSet, useDiscardWorkout, useFinishWorkout, useLogSet } from '~/api/queries'
 import { widgetFor } from '~/lib/modality'
-import { describeSet, formatTime } from '~/lib/format'
+import { useCue } from '~/lib/cue'
+import { describeSet, formatDuration, formatTime } from '~/lib/format'
 import SetForm, { type SetFields } from './SetForm'
+import RestTimer from './RestTimer'
+import RestEditor from './RestEditor'
+
+// Rest length is a front-end-only preference (no backend): the timer opens at
+// this default and remembers whatever you set it to, across reloads and sessions.
+const DEFAULT_REST_SECONDS = 45
+const MIN_REST_SECONDS = 5
+const REST_KEY = 'summit.restSeconds'
+
+function readRestPref(): number {
+  try {
+    const n = parseInt(localStorage.getItem(REST_KEY) ?? '', 10)
+    if (Number.isFinite(n) && n >= MIN_REST_SECONDS) return n
+  } catch {
+    /* no localStorage (e.g. tests) — fall back to the default */
+  }
+  return DEFAULT_REST_SECONDS
+}
+
+function writeRestPref(seconds: number) {
+  try {
+    localStorage.setItem(REST_KEY, String(seconds))
+  } catch {
+    /* ignore — the in-memory value still drives this session */
+  }
+}
 
 // The live logging session, stepped one exercise at a time. Opens on an overview
 // checklist; tap a slot to focus it. The focused step is jumpable (dots + prev/
@@ -14,6 +41,25 @@ export default function WorkoutSession({ workout }: { workout: Workout }) {
   const discard = useDiscardWorkout()
   // null = overview; a number = the focused slot index.
   const [focused, setFocused] = useState<number | null>(null)
+
+  // Rest timer state lives at the session so it survives slot-to-slot jumps.
+  // `cue` is created here (not per-slot) so the AudioContext armed on one log
+  // is still around to beep later. restStartedAt = the current rest's start.
+  const cue = useCue()
+  const [restSeconds, setRestSeconds] = useState(readRestPref)
+  const [restStartedAt, setRestStartedAt] = useState<number | null>(null)
+  const [editingRest, setEditingRest] = useState(false)
+  useEffect(() => writeRestPref(restSeconds), [restSeconds]) // remember the setting.
+
+  // Called from within the log tap, so arming the audio context is a valid
+  // user gesture; the fresh timestamp (re)starts the rest bar.
+  function onSetLogged() {
+    cue.arm()
+    setRestStartedAt(Date.now())
+  }
+
+  // Stable so RestTimer's run effect isn't retriggered every session render.
+  const dismissRest = useCallback(() => setRestStartedAt(null), [])
 
   const slots = workout.slots
   const focusedSlot = focused == null ? null : slots[focused]
@@ -28,6 +74,9 @@ export default function WorkoutSession({ workout }: { workout: Workout }) {
           <p className="caption text-muted">Started {formatTime(workout.startedAt)}</p>
         </div>
         <div className="session-actions">
+          <button className="btn btn--ghost btn--compact" onClick={() => setEditingRest(true)} title="Set rest between sets">
+            Rest {formatDuration(restSeconds)}
+          </button>
           {empty && (
             <button className="btn btn--ghost" disabled={discard.isPending} onClick={() => discard.mutate(workout.id)}>
               Change routine
@@ -46,9 +95,21 @@ export default function WorkoutSession({ workout }: { workout: Workout }) {
           index={focused!}
           onIndex={setFocused}
           onExit={() => setFocused(null)}
+          onSetLogged={onSetLogged}
         />
       ) : (
         <Overview slots={slots} onPick={setFocused} />
+      )}
+
+      <RestTimer startedAt={restStartedAt} duration={restSeconds} onDismiss={dismissRest} cue={cue} />
+
+      {editingRest && (
+        <RestEditor
+          seconds={restSeconds}
+          min={MIN_REST_SECONDS}
+          onSave={setRestSeconds}
+          onClose={() => setEditingRest(false)}
+        />
       )}
     </section>
   )
@@ -85,12 +146,14 @@ function FocusedStep({
   index,
   onIndex,
   onExit,
+  onSetLogged,
 }: {
   workoutId: number
   slots: WorkoutSlot[]
   index: number
   onIndex: (index: number) => void
   onExit: () => void
+  onSetLogged: () => void
 }) {
   return (
     <div className="step mt-4">
@@ -115,7 +178,7 @@ function FocusedStep({
         ))}
       </div>
 
-      <SlotCard workoutId={workoutId} slot={slots[index]} />
+      <SlotCard workoutId={workoutId} slot={slots[index]} onSetLogged={onSetLogged} />
 
       <div className="step-nav">
         <button className="btn btn--ghost" disabled={index === 0} onClick={() => onIndex(index - 1)}>
@@ -132,7 +195,7 @@ function FocusedStep({
 // The logging body for one slot. Progression slots add a phase picker (defaulted
 // to the derived current phase); the chosen phase is what you log against, and
 // its id stamps the set so advancement derives from the Log.
-function SlotCard({ workoutId, slot }: { workoutId: number; slot: WorkoutSlot }) {
+function SlotCard({ workoutId, slot, onSetLogged }: { workoutId: number; slot: WorkoutSlot; onSetLogged: () => void }) {
   const logSet = useLogSet()
   const deleteSet = useDeleteSet()
 
@@ -145,6 +208,7 @@ function SlotCard({ workoutId, slot }: { workoutId: number; slot: WorkoutSlot })
   const widget = widgetFor(activeExercise.modality)
 
   function handleLog(fields: SetFields) {
+    onSetLogged() // arm audio (still in the tap gesture) + start the rest timer.
     logSet.mutate({
       workoutId,
       exerciseId: activeExercise.id,

@@ -4,6 +4,12 @@ Personal **2-user** health & training PWA: workouts, multi-phase progressions,
 napkin-style nutrition, and LLM-assisted routine building. PNW-flavored.
 Rails 8.1 API-only + React/TS (Vite). See `README.md` for setup.
 
+## Commands
+- `bin/setup` — install deps + prepare DB. `bin/dev` — boot Rails + Vite via foreman.
+- Ruby tests: `bundle exec rspec`; one file/example: `bundle exec rspec spec/models/data_model_spec.rb:42`.
+- Frontend tests: `yarn test` (vitest run); one file: `yarn test frontend/components/HoldTimer.test.tsx`; watch: `yarn test:watch`.
+- Types: `yarn typecheck` (`tsc --noEmit`). Lint Ruby: `bundle exec rubocop`.
+
 ## Source-of-truth docs
 - `docs/data_model.md` — the schema and **why** it's shaped this way. Read it
   before touching models or migrations; it's authoritative over this file.
@@ -47,6 +53,26 @@ Conventions worth not re-deriving:
   `unit_preference`, no kg conversion.
 - **Climbing = a `HealthImport`** on an off-script `Workout` (nullable
   `routine_id`); no V-grade fields (vanity metrics, out of scope).
+
+## Frontend & API
+The React/TS app lives at repo-root **`frontend/`** (not `app/frontend/` — that's
+an inert `.keep` the js_from_routes gem needs). Vite alias **`~` → `frontend/`**.
+- **API layer is generated.** Routes opting in with `defaults: { export: true }`
+  emit typed helpers into `frontend/api/` (`config/initializers/js_from_routes.rb`).
+  Regenerates on page refresh **in development only**; the files are committed so
+  test/prod don't need the gem. Add a route → give it `export: true` → refresh a
+  dev page to regenerate. Endpoints that shouldn't be called from the picker-based
+  frontend (e.g. real-auth integrations) are intentionally *not* exported.
+- **Every screen follows `frontend/api/queries.ts`**: React Query hooks wrapping the
+  generated helpers, keyed for cache invalidation. The session cookie rides along
+  on same-origin requests, so no hook passes a user id.
+- **Casing bridge** — js-from-routes deserializes responses to camelCase and
+  serializes request bodies back to snake_case. Write camelCase in `frontend/`;
+  Rails stays snake_case. `tsc` won't catch a mismatch — keep `frontend/types.ts`
+  aligned with what controllers actually render.
+- **Serialization is hand-rolled `as_json`** in controllers (private `*_json`
+  helpers), not Blueprinter despite the gem being present. `current_user` comes from
+  the session cookie in `Api::V1::BaseController`; there is no auth layer.
 
 ## Testing
 RSpec + FactoryBot (per global prefs). `spec/models/data_model_spec.rb` pins the

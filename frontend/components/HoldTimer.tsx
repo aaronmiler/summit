@@ -1,20 +1,13 @@
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type CSSProperties,
-  type KeyboardEvent as ReactKeyboardEvent,
-  type PointerEvent as ReactPointerEvent,
-} from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { formatDuration } from '~/lib/format'
+import { useCue, type Cue } from '~/lib/cue'
+import { useWakeLock } from '~/lib/wakeLock'
+import Adjuster from './Adjuster'
 
 // The two tunable knobs. Deploy-to-change is fine — they're not user settings.
 const COUNT_IN_SECONDS = 5 // "get set" runway before the hold begins.
 const STOP_SHAVE_SECONDS = 3 // reaction/reach-to-phone lag, trimmed off every stop.
 const DEFAULT_TARGET = 20 // where the encoder sits with no prior hang to seed from.
-const PX_PER_UNIT = 10 // horizontal drag distance (px) that changes the value by 1s.
 
 const COUNT_IN_MS = COUNT_IN_SECONDS * 1000
 
@@ -151,70 +144,6 @@ export default function HoldTimer({
   )
 }
 
-// The adjuster bar: [−] encoder [+]. The encoder is a jog wheel — drag left/right
-// for a *relative* delta (no anchor, effectively infinite), with scrolling ticks
-// and a fixed center line. Steppers and arrow keys nudge by 1s; a spinbutton role
-// keeps it accessible without pretending to have a fixed range.
-function Adjuster({
-  value,
-  onChange,
-  disabled,
-}: {
-  value: number
-  onChange?: (n: number) => void
-  disabled?: boolean
-}) {
-  const drag = useRef<{ x: number; from: number } | null>(null)
-  const set = (n: number) => onChange?.(Math.max(0, n))
-
-  const onPointerDown = (e: ReactPointerEvent) => {
-    if (disabled || !onChange) return
-    e.currentTarget.setPointerCapture?.(e.pointerId)
-    drag.current = { x: e.clientX, from: value }
-  }
-  const onPointerMove = (e: ReactPointerEvent) => {
-    if (!drag.current) return
-    set(drag.current.from + Math.round((e.clientX - drag.current.x) / PX_PER_UNIT))
-  }
-  const endDrag = () => {
-    drag.current = null
-  }
-  const onKeyDown = (e: ReactKeyboardEvent) => {
-    if (e.key === 'ArrowRight' || e.key === 'ArrowUp') set(value + 1)
-    else if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') set(value - 1)
-    else return
-    e.preventDefault()
-  }
-
-  return (
-    <div className="adjuster">
-      <button className="adjuster__step" type="button" disabled={disabled} onClick={() => set(value - 1)} aria-label="minus one second">
-        −
-      </button>
-      <div
-        className={`encoder ${disabled ? 'encoder--disabled' : ''}`}
-        role="spinbutton"
-        tabIndex={disabled ? -1 : 0}
-        aria-valuenow={value}
-        aria-label="seconds"
-        aria-disabled={disabled || undefined}
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={endDrag}
-        onPointerCancel={endDrag}
-        onKeyDown={onKeyDown}
-        style={{ '--tick-offset': `${-value * PX_PER_UNIT}px` } as CSSProperties}
-      >
-        <div className="encoder__ticks" />
-        <div className="encoder__cursor" />
-      </div>
-      <button className="adjuster__step" type="button" disabled={disabled} onClick={() => set(value + 1)} aria-label="plus one second">
-        +
-      </button>
-    </div>
-  )
-}
-
 // The big central box: a large number with a small caption under it.
 function Box({ big, label, over }: { big: string; label: string; over?: boolean }) {
   return (
@@ -245,86 +174,4 @@ function fireCues(cue: Cue, prevMs: number, curMs: number, targetMs: number) {
   const prevHold = prevMs - COUNT_IN_MS
   const curHold = curMs - COUNT_IN_MS
   if (prevHold < targetMs && curHold >= targetMs) cue.target()
-}
-
-// --- Screen wake lock ------------------------------------------------------
-// Feature-detected; a no-op where unsupported. Browsers drop the lock when the
-// tab is hidden, so re-acquire on return-to-foreground while we're still active.
-function useWakeLock() {
-  const sentinel = useRef<WakeLockSentinel | null>(null)
-  const active = useRef(false)
-
-  const acquire = useCallback(async () => {
-    active.current = true
-    try {
-      if ('wakeLock' in navigator) sentinel.current = await navigator.wakeLock.request('screen')
-    } catch {
-      /* denied or unsupported — the timer still works, the screen just may dim */
-    }
-  }, [])
-
-  const release = useCallback(() => {
-    active.current = false
-    sentinel.current?.release().catch(() => {})
-    sentinel.current = null
-  }, [])
-
-  useEffect(() => {
-    const onVisible = () => {
-      if (active.current && !sentinel.current && document.visibilityState === 'visible') acquire()
-    }
-    document.addEventListener('visibilitychange', onVisible)
-    return () => document.removeEventListener('visibilitychange', onVisible)
-  }, [acquire])
-
-  return useMemo(() => ({ acquire, release }), [acquire, release])
-}
-
-// --- Audio + haptic cues ---------------------------------------------------
-// On a hangboard your hands are on the bar and the phone's on the floor, so the
-// beeps are the point — you run this eyes-off. All guarded: silent where the
-// APIs are missing (e.g. tests).
-type Cue = { arm: () => void; tick: () => void; go: () => void; target: () => void }
-
-function useCue(): Cue {
-  const ctx = useRef<AudioContext | null>(null)
-
-  const arm = useCallback(() => {
-    try {
-      const Ctor = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
-      if (Ctor && !ctx.current) ctx.current = new Ctor()
-      ctx.current?.resume?.()
-    } catch {
-      /* no audio available */
-    }
-  }, [])
-
-  const beep = useCallback((freq: number, ms: number, vibe: number | number[]) => {
-    const c = ctx.current
-    if (c) {
-      try {
-        const osc = c.createOscillator()
-        const gain = c.createGain()
-        osc.frequency.value = freq
-        osc.connect(gain)
-        gain.connect(c.destination)
-        gain.gain.setValueAtTime(0.15, c.currentTime)
-        gain.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + ms / 1000)
-        osc.start()
-        osc.stop(c.currentTime + ms / 1000)
-      } catch {
-        /* ignore */
-      }
-    }
-    try {
-      if ('vibrate' in navigator) navigator.vibrate(vibe)
-    } catch {
-      /* ignore */
-    }
-  }, [])
-
-  const tick = useCallback(() => beep(660, 90, 30), [beep])
-  const go = useCallback(() => beep(880, 220, 80), [beep])
-  const target = useCallback(() => beep(990, 260, [60, 40, 140]), [beep])
-  return useMemo(() => ({ arm, tick, go, target }), [arm, tick, go, target])
 }

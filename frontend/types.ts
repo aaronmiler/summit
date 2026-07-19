@@ -10,6 +10,7 @@ export type User = { id: number; name: string }
 export type Modality =
   | 'barbell'
   | 'dumbbell'
+  | 'kettlebell'
   | 'machine'
   | 'bodyweight'
   | 'band'
@@ -29,6 +30,7 @@ export type Exercise = {
 export const MODALITIES: Modality[] = [
   'barbell',
   'dumbbell',
+  'kettlebell',
   'machine',
   'bodyweight',
   'band',

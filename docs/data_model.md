@@ -75,8 +75,9 @@ is the source of truth.
 - Rows are *specific movements*: "Barbell Bicep Curl" and "Dumbbell Bicep Curl"
   are separate rows. The name is self-describing (great for the LLM), logging
   points at one `exercise_id`, no compound key.
-- Fields: `name`, `modality` (enum: `barbell`, `dumbbell`, `machine`,
-  `bodyweight`, `band`, `hangboard`, `cardio`, `climbing`, …), `muscle_group`
+- Fields: `name`, `modality` (enum: `barbell`, `dumbbell`, `kettlebell`,
+  `machine`, `bodyweight`, `band`, `hangboard`, `cardio`, `climbing`, …),
+  `muscle_group`
   (loose grouping so the LLM can reason about substitutions).
 - `modality` is load-bearing: it picks the **logging widget** (timer for
   `hangboard`/holds, reps+weight for lifts, duration/zone for `cardio`) and

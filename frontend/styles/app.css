@@ -531,6 +531,94 @@
   align-self: center;
 }
 
+/* The between-sets rest timer: a fixed bottom footer with a bar that depletes
+   left-to-right over the rest, then buzzes, lingers, and fades out. */
+.rest-footer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  background-color: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+  box-shadow: var(--shadow-2);
+  opacity: 1;
+  transition: opacity 500ms ease; /* keep in sync with RestTimer's FADE_MS */
+}
+
+.rest-footer--fading {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* The depleting progress bar: a translucent accent fill anchored left, shrinking
+   from full to empty over the rest. Duration is set inline; purely visual — the
+   JS tick owns the actual finish. */
+.rest-footer__bar {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background-color: color-mix(in srgb, var(--app-accent) 22%, transparent);
+  animation-name: rest-deplete;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+.rest-footer--done .rest-footer__bar {
+  background-color: color-mix(in srgb, var(--app-accent) 32%, transparent);
+}
+
+@keyframes rest-deplete {
+  from {
+    width: 100%;
+  }
+  to {
+    width: 0%;
+  }
+}
+
+/* Content rides above the bar, centered to the app's column width. */
+.rest-footer__row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  max-width: 1024px;
+  margin: 0 auto;
+  padding: var(--space-3) var(--space-4);
+  padding-bottom: max(var(--space-3), env(safe-area-inset-bottom)); /* clear the iOS home bar */
+}
+
+.rest-footer__label {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.rest-footer--done .rest-footer__label {
+  color: var(--app-accent);
+}
+
+.rest-footer__time {
+  margin-left: auto;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.rest-footer__skip {
+  flex: none;
+  margin-left: auto;
+  width: 2rem;
+  height: 2rem;
+  font-size: 1.25rem;
+  line-height: 1;
+  color: var(--color-text-secondary);
+  background: none;
+  border: none;
+}
+
 .tabular {
   font-variant-numeric: tabular-nums;
 }
