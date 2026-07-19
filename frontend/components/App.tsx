@@ -10,6 +10,7 @@ import HealthImportSetup from './HealthImportSetup'
 import Integrations from './Integrations'
 import Library from './Library'
 import RoutineDetail from './RoutineDetail'
+import RoutineEditor from './RoutineEditor'
 import Exercises from './Exercises'
 
 // The shell. Identity gates everything: no user in session -> picker; otherwise
@@ -35,7 +36,9 @@ export default function App() {
         <Route path="/settings/integrations" element={<Integrations />} />
         <Route path="/library" element={<Library />} />
         <Route path="/library/exercises" element={<Exercises />} />
+        <Route path="/library/routines/new" element={<RoutineEditor />} />
         <Route path="/library/routines/:id" element={<RoutineDetail />} />
+        <Route path="/library/routines/:id/edit" element={<RoutineEditor />} />
         <Route path="/nutrition" element={<Placeholder title="Nutrition" />} />
       </Routes>
     </Layout>

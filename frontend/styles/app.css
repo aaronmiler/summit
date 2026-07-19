@@ -43,6 +43,83 @@
   gap: var(--space-4);
 }
 
+/* Right side of the library header: browse link + "New routine" button. */
+.library-header__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+/* Routine detail: title on the left, Edit/Delete on the right. */
+.detail-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.detail-header__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+/* ---- Routine editor --------------------------------------------------- */
+
+/* Per-slot controls (reorder / swap / remove) opposite the slot name. */
+.slot-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex-shrink: 0;
+}
+
+/* Save action sits below the slot list, right-aligned. */
+.editor-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--space-6);
+}
+
+/* The unified exercise/progression picker: a scrollable list of tappable rows. */
+.slot-picker {
+  max-width: 520px;
+}
+
+.slot-picker__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  max-height: 50vh;
+  overflow-y: auto;
+  margin-bottom: var(--space-6);
+}
+
+.slot-picker__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  text-align: left;
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.slot-picker__item:hover {
+  border-color: var(--color-focus);
+}
+
+/* Destructive affordances (remove slot, delete routine). */
+.text-danger {
+  color: var(--tint-negative-fg);
+}
+
 /* Routine cards are links; kill the anchor defaults so the card reads clean. */
 .library-card {
   display: block;

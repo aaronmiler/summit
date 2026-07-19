@@ -11,9 +11,14 @@ export default function Library() {
     <section>
       <div className="library-header mb-6">
         <h1 className="page-heading text-green">Library</h1>
-        <Link to="/library/exercises" className="text-accent">
-          Browse all exercises →
-        </Link>
+        <div className="library-header__actions">
+          <Link to="/library/exercises" className="text-accent">
+            Browse all exercises →
+          </Link>
+          <Link to="/library/routines/new" className="btn btn--primary btn--compact">
+            + New routine
+          </Link>
+        </div>
       </div>
 
       {isLoading ? (

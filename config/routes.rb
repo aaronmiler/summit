@@ -15,9 +15,12 @@ Rails.application.routes.draw do
       resource :session, only: %i[show create destroy], defaults: { export: true }
       resources :users, only: %i[index], defaults: { export: true }
 
-      # Library (read-only for now): browse the shared exercises and routines.
+      # Library: browse the shared exercises + progressions, and full CRUD on
+      # routines (the hand editor; the LLM builder comes later). `progressions`
+      # is index-only — it backs the routine editor's slot picker.
       resources :exercises, only: %i[index], defaults: { export: true }
-      resources :routines, only: %i[index show], defaults: { export: true }
+      resources :progressions, only: %i[index], defaults: { export: true }
+      resources :routines, only: %i[index show create update destroy], defaults: { export: true }
 
       # Logging. `current` is the active (unfinished) workout for the picked user
       # — the live session. Sets are logged into it; `destroy` removes a mislog.

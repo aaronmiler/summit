@@ -1,5 +1,5 @@
-import { Link, useParams } from 'react-router-dom'
-import { useRoutine } from '~/api/queries'
+import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useRoutine, useDeleteRoutine } from '~/api/queries'
 import type { RoutineExercise } from '~/types'
 
 // One routine's ordered slots. A slot is an exercise XOR a progression; the
@@ -7,17 +7,41 @@ import type { RoutineExercise } from '~/types'
 // derived from the Log, so it isn't highlighted here — that's a logging concern).
 export default function RoutineDetail() {
   const { id } = useParams()
+  const navigate = useNavigate()
   const { data: routine, isLoading, isError } = useRoutine(id)
+  const del = useDeleteRoutine()
 
   if (isLoading) return <p className="text-muted">Loading…</p>
   if (isError || !routine) return <p className="text-muted">Routine not found.</p>
+
+  // Deleting never touches the Log — past workouts keep their sets, with
+  // routine_id nulled server-side. Confirm since it drops the plan itself.
+  function handleDelete() {
+    if (!routine) return
+    if (!window.confirm(`Delete "${routine.name}"? Past workouts keep their logged sets.`)) return
+    del.mutate(routine.id, { onSuccess: () => navigate('/library') })
+  }
 
   return (
     <section>
       <Link to="/library" className="text-accent body-small">
         ← Library
       </Link>
-      <h1 className="page-heading text-green mt-4">{routine.name}</h1>
+      <div className="detail-header mt-4">
+        <h1 className="page-heading text-green">{routine.name}</h1>
+        <div className="detail-header__actions">
+          <Link to={`/library/routines/${routine.id}/edit`} className="btn btn--secondary btn--compact">
+            Edit
+          </Link>
+          <button
+            className="btn btn--ghost btn--compact text-danger"
+            disabled={del.isPending}
+            onClick={handleDelete}
+          >
+            Delete
+          </button>
+        </div>
+      </div>
       {routine.notes && <p className="body-text text-muted mb-4">{routine.notes}</p>}
       {(routine.preferredFrequency || routine.tags.length > 0) && (
         <div className="badge-row mb-6">

@@ -64,6 +64,42 @@ export type RoutineDetail = Routine & {
   routineExercises: RoutineExercise[]
 }
 
+// --- Routine editing (the hand editor) ----------------------------------
+
+// A progression as the editor's slot picker sees it (id + name only).
+export type ProgressionSummary = {
+  id: number
+  name: string
+}
+
+// One slot in the edit payload. `id` is present for existing slots (edit/swap/
+// reorder), absent for new ones. A slot is exercise XOR progression — send both
+// ids (one null) so a swap clears the other side. `position` is the slot's index
+// in the edited order. A removal is just `{ id, _destroy: true }` (the rest of
+// the fields are irrelevant once the row is marked for destruction).
+export type SlotInput = {
+  id?: number
+  exerciseId?: number | null
+  progressionId?: number | null
+  position?: number
+  target?: string | null
+  restSeconds?: number | null
+  notes?: string | null
+  progressionNote?: string | null
+  _destroy?: boolean
+}
+
+// The create/update payload. `routineExercisesAttributes` is the whole slot list
+// in one call (adds, edits, removals); the client serializes it to the
+// snake_case nested-attributes shape Rails expects.
+export type RoutineInput = {
+  name: string
+  notes: string | null
+  tags: string[]
+  preferredFrequency: string | null
+  routineExercisesAttributes: SlotInput[]
+}
+
 // --- Logging (the live workout session) ---------------------------------
 
 // One logged set. Modality-specific numbers are nullable; setNumber is explicit.

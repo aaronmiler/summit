@@ -81,5 +81,22 @@ RSpec.describe "Summit data model" do
       expect { set_log.exercise.destroy }
         .to raise_error(ActiveRecord::DeleteRestrictionError)
     end
+
+    it "nullifies a SetLog's routine_exercise breadcrumb on slot delete, keeping actuals" do
+      # A routine edit that removes a slot must never rewrite the Log. The set's
+      # own exercise_id + reps/weight are the actuals; routine_exercise_id is only
+      # context, so it nullifies (FK on_delete: :nullify) while the rest survives.
+      routine = create(:routine)
+      row = create(:exercise, name: "Barbell Row")
+      slot = create(:routine_exercise, routine:, exercise: row)
+      set_log = create(:set_log, exercise: row, routine_exercise: slot, reps: 8, weight: 135)
+
+      slot.destroy
+
+      set_log.reload
+      expect(set_log.routine_exercise_id).to be_nil
+      expect(set_log.exercise).to eq(row)
+      expect([ set_log.reps, set_log.weight ]).to eq([ 8, 135 ])
+    end
   end
 end

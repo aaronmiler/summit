@@ -12,6 +12,7 @@ import {
   apiV1Sessions,
   apiV1Users,
   apiV1Exercises,
+  apiV1Progressions,
   apiV1Routines,
   apiV1Workouts,
   apiV1SetLogs,
@@ -21,6 +22,8 @@ import type {
   Exercise,
   Routine,
   RoutineDetail,
+  RoutineInput,
+  ProgressionSummary,
   Workout,
   SetLog,
   LogSetInput,
@@ -83,12 +86,58 @@ export function useRoutines() {
   })
 }
 
-// One routine with its ordered slots, for the detail screen.
+// One routine with its ordered slots, for the detail + edit screens.
 export function useRoutine(id: string | undefined) {
   return useQuery({
     queryKey: ['routines', id],
     queryFn: () => apiV1Routines.show<RoutineDetail>({ id: id! }),
     enabled: id != null,
+  })
+}
+
+// All progressions (id + name), for the routine editor's slot picker.
+export function useProgressions() {
+  return useQuery({
+    queryKey: ['progressions'],
+    queryFn: () => apiV1Progressions.index<ProgressionSummary[]>(),
+  })
+}
+
+// --- Routine editing (the hand editor) ----------------------------------
+
+// Create a routine (+ its slots) -> refresh the library list.
+export function useCreateRoutine() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (input: RoutineInput) =>
+      apiV1Routines.create<RoutineDetail>({ data: input }),
+    onSuccess: (routine) => {
+      queryClient.invalidateQueries({ queryKey: ['routines'] })
+      queryClient.setQueryData(['routines', String(routine.id)], routine)
+    },
+  })
+}
+
+// Save an edit (metadata + the whole slot list) -> refresh the detail + list.
+// id rides inside `data` so it fills :id (see the path-param note on useLogSet).
+export function useUpdateRoutine(id: number) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (input: RoutineInput) =>
+      apiV1Routines.update<RoutineDetail>({ data: { id, ...input } }),
+    onSuccess: (routine) => {
+      queryClient.setQueryData(['routines', String(id)], routine)
+      queryClient.invalidateQueries({ queryKey: ['routines'] })
+    },
+  })
+}
+
+// Delete a routine -> drop it from the library (history is untouched server-side).
+export function useDeleteRoutine() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => apiV1Routines.destroy({ id }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['routines'] }),
   })
 }
 
