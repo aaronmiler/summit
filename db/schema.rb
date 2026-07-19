@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_16_160000) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_18_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -178,6 +178,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_16_160000) do
     t.index ["workout_id"], name: "index_set_logs_on_workout_id"
   end
 
+  create_table "training_sessions", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["user_id"], name: "index_training_sessions_on_user_id"
+  end
+
   create_table "users", force: :cascade do |t|
     t.string "api_token", null: false
     t.datetime "created_at", null: false
@@ -196,9 +203,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_16_160000) do
     t.text "notes"
     t.bigint "routine_id"
     t.datetime "started_at", null: false
+    t.bigint "training_session_id"
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
     t.index ["routine_id"], name: "index_workouts_on_routine_id"
+    t.index ["training_session_id"], name: "index_workouts_on_training_session_id"
     t.index ["user_id", "started_at"], name: "index_workouts_on_user_id_and_started_at"
     t.index ["user_id"], name: "index_workouts_on_user_id"
   end
@@ -219,6 +228,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_16_160000) do
   add_foreign_key "set_logs", "progression_phases"
   add_foreign_key "set_logs", "routine_exercises"
   add_foreign_key "set_logs", "workouts"
+  add_foreign_key "training_sessions", "users"
   add_foreign_key "workouts", "routines"
+  add_foreign_key "workouts", "training_sessions", on_delete: :nullify
   add_foreign_key "workouts", "users"
 end

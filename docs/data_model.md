@@ -151,6 +151,27 @@ longer requires a `Workout`.
   — workouts ingest; the per-day health picture is deferred (see
   `open_questions.md`).
 
+**`TrainingSession`** — groups a day's Log events into one thing (added
+2026-07-18). Because each health import materializes its *own* `Workout`, a single
+real session split across three rows in History: a warmup import, the Summit
+routine `Workout`, and the watch's strength import. A `TrainingSession` collects
+them (`Workout.training_session_id`, nullable) so History shows one entry.
+- **Assigned at the write boundary, not derived** — this is a deliberate
+  exception to "derive from the Log." Membership is set by `TrainingSession.absorb`
+  on the two events that settle a session: **health-import ingest** and **routine
+  finish**. It's stored (not a per-read query) for the same reason
+  `HealthImport.workout_id` is: it encodes an assign-time decision — and, later, a
+  manual merge — that isn't re-derivable. Assigned off *recorded* times, so a
+  late-arriving import still lands in its correct slot.
+- **Rule:** single-linkage clustering, `GAP = 1h`. A workout joins the session
+  holding the nearest neighbor within the gap; a broken-up day chains while no
+  single break exceeds it. Conservative on purpose — wider grouping is a **manual
+  merge** (not built yet; the stable row is what leaves room for it), not a looser
+  threshold. `dependent: :nullify` / FK `on_delete: :nullify` — losing a session
+  never deletes its immutable Log events.
+- Behavior pinned in `spec/models/training_session_spec.rb` (Friday collapses,
+  Thursday's morning-climb/evening-golf stay split).
+
 **`IntegrationEvent`** — one durable row per interaction with an external
 system (added 2026-07-16). A **general** audit log, not health-specific: inbound
 webhooks (Health Auto Export pushes) today, outbound LLM calls (workout

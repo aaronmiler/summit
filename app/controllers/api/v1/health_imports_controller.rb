@@ -93,6 +93,9 @@ module Api
           routine_id: nil, started_at: started, finished_at: finished, notes: import.summary
         )
         import.update!(workout: workout_record)
+        # Boundary 1: an inbound activity joins (or opens) the training session it
+        # falls in — the warmup + the routine + the watch strength become one.
+        TrainingSession.absorb(workout_record)
         detail.merge(outcome: :created)
       rescue ActiveRecord::RecordNotUnique
         detail.merge(outcome: :skipped) # lost a race on the dedupe index

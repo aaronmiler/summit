@@ -87,7 +87,7 @@
 
 .slot-target {
   font-variant-numeric: tabular-nums;
-  color: var(--timber);
+  color: var(--color-text-secondary);
   white-space: nowrap;
 }
 
@@ -106,7 +106,7 @@
   list-style: none;
   margin-top: var(--space-3);
   padding-top: var(--space-3);
-  border-top: 1px solid var(--fog);
+  border-top: 1px solid var(--color-border);
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
@@ -135,7 +135,7 @@
   justify-content: space-between;
   gap: var(--space-4);
   padding: var(--space-3) 0;
-  border-bottom: 1px solid var(--fog);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .exercise-name {
@@ -179,8 +179,8 @@
   align-items: center;
   gap: var(--space-3);
   padding: var(--space-3) var(--space-4);
-  background-color: #fff;
-  border: 1px solid var(--fog);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   font: inherit;
   text-align: left;
@@ -207,12 +207,12 @@
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  border: 2px solid var(--driftwood);
+  border: 2px solid var(--color-border-strong);
 }
 
 .status-dot--done {
-  background-color: var(--cascadia-green);
-  border-color: var(--cascadia-green);
+  background-color: var(--color-brand-fg);
+  border-color: var(--color-brand-fg);
 }
 
 /* Focused step: back link + progress, jumpable dots, then prev/next. */
@@ -243,15 +243,15 @@
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  border: 2px solid var(--driftwood);
+  border: 2px solid var(--color-border-strong);
   background: transparent;
   padding: 0;
   cursor: pointer;
 }
 
 .step-dot--done {
-  background-color: var(--cascadia-green);
-  border-color: var(--cascadia-green);
+  background-color: var(--color-brand-fg);
+  border-color: var(--color-brand-fg);
 }
 
 .step-dot--current {
@@ -288,7 +288,7 @@
   align-items: baseline;
   gap: var(--space-3);
   padding-bottom: var(--space-2);
-  border-bottom: 1px solid var(--fog);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .logged-set__n {
@@ -351,8 +351,8 @@
   flex: 1;
   min-width: 0;
   height: 2.5rem;
-  background-color: #fff;
-  border: 1px solid var(--fog);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   overflow: hidden;
   cursor: ew-resize;
@@ -369,8 +369,8 @@
   position: absolute;
   inset: 0;
   background-image:
-    repeating-linear-gradient(90deg, var(--fog) 0 1px, transparent 1px 10px),
-    repeating-linear-gradient(90deg, var(--driftwood) 0 2px, transparent 2px 50px);
+    repeating-linear-gradient(90deg, var(--color-border) 0 1px, transparent 1px 10px),
+    repeating-linear-gradient(90deg, var(--color-border-strong) 0 2px, transparent 2px 50px);
   background-position-x: var(--tick-offset, 0);
 }
 
@@ -395,9 +395,9 @@
   height: 2.5rem;
   font-size: 1.25rem;
   line-height: 1;
-  color: var(--pnw-ink);
-  background-color: #fff;
-  border: 1px solid var(--fog);
+  color: var(--color-text);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
 }
 
@@ -413,8 +413,8 @@
   justify-content: center;
   gap: var(--space-1);
   padding: var(--space-5);
-  background-color: var(--overcast);
-  border: 1px solid var(--fog);
+  background-color: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
 }
 
@@ -422,7 +422,7 @@
   font-size: 3.5rem;
   font-weight: 600;
   line-height: 1;
-  color: var(--pnw-ink);
+  color: var(--color-text);
 }
 
 .hold-box--over .hold-box__big {
@@ -455,8 +455,8 @@
   align-items: baseline;
   gap: var(--space-3);
   padding: var(--space-3) var(--space-4);
-  background-color: #fff;
-  border: 1px solid var(--fog);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   text-decoration: none;
   color: inherit;
@@ -470,7 +470,7 @@
 .history-date {
   min-width: 4rem;
   font-variant-numeric: tabular-nums;
-  color: var(--timber);
+  color: var(--color-text-secondary);
 }
 
 .history-name {
@@ -480,6 +480,62 @@
 .history-meta {
   margin-left: auto;
   white-space: nowrap;
+}
+
+/* A multi-event training session: header + nested workout rows in one card. */
+.session-card {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.session-header {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background-color: var(--color-surface-alt);
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* Sub-entries read as children of the header: indented under a timeline spine
+   (one continuous rail, an accent node per activity) and a size down, so a
+   session reads as one sequence rather than stacked standalone rows. */
+.session-workouts {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  margin-left: var(--space-5);
+  padding: var(--space-2) 0;
+  border-left: 2px solid var(--color-border);
+}
+
+.session-workouts .history-row {
+  position: relative;
+  border: none;
+  border-radius: 0;
+  background-color: transparent;
+  padding-left: var(--space-5);
+  font-size: 0.875rem;
+}
+
+/* The node dot, centered on the rail and aligned to the row's first line. */
+.session-workouts .history-row::before {
+  content: '';
+  position: absolute;
+  left: -5px;
+  top: calc(var(--space-3) + 0.45em);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--app-accent);
+  border: 2px solid var(--color-surface);
+}
+
+.session-workouts .history-row:hover {
+  box-shadow: none;
+  background-color: var(--color-surface-alt);
 }
 
 /* ---- Apple Health setup ----------------------------------------------- */
@@ -514,8 +570,8 @@
   overflow-x: auto;
   white-space: nowrap;
   padding: var(--space-2) var(--space-3);
-  background-color: var(--overcast);
-  border: 1px solid var(--fog);
+  background-color: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 0.8125rem;
@@ -523,7 +579,7 @@
 
 .setup-file {
   padding-top: var(--space-5);
-  border-top: 1px solid var(--fog);
+  border-top: 1px solid var(--color-border);
 }
 
 /* ---- Integration monitoring (Sync activity) --------------------------- */
@@ -549,8 +605,8 @@
   align-items: flex-start;
   gap: var(--space-3);
   padding: var(--space-3) var(--space-4);
-  background-color: #fff;
-  border: 1px solid var(--fog);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
 }
 
@@ -595,7 +651,7 @@
 }
 
 .event-error {
-  color: var(--destructive);
+  color: var(--color-destructive-fg);
 }
 
 .event-meta {

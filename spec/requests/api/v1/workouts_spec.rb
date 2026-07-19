@@ -117,7 +117,7 @@ RSpec.describe "Api::V1::Workouts", type: :request do
   describe "GET /api/v1/workouts (history)" do
     before { sign_in(aaron) }
 
-    it "lists this user's finished workouts, newest first, with set counts" do
+    it "groups finished workouts into sessions, newest first, with rolled-up set counts" do
       old = create(:workout, user: aaron, routine:, started_at: 3.days.ago, finished_at: 3.days.ago)
       recent = create(:workout, user: aaron, routine:, started_at: 1.hour.ago, finished_at: 30.minutes.ago)
       create(:set_log, workout: recent, exercise: row, set_number: 1)
@@ -126,9 +126,11 @@ RSpec.describe "Api::V1::Workouts", type: :request do
       get "/api/v1/workouts"
 
       expect(response).to have_http_status(:ok)
-      ids = response.parsed_body.map { |w| w["id"] }
-      expect(ids).to eq([ recent.id, old.id ]) # newest first
-      expect(response.parsed_body.first).to include(
+      sessions = response.parsed_body
+      # Two standalone workouts, 3 days apart -> two one-workout sessions, newest first.
+      expect(sessions.map { |s| s["workouts"].first["id"] }).to eq([ recent.id, old.id ])
+      expect(sessions.first).to include("name" => "Pull", "set_count" => 2)
+      expect(sessions.first["workouts"].first).to include(
         "id" => recent.id, "set_count" => 2, "routine" => { "id" => routine.id, "name" => "Pull" },
       )
     end
@@ -141,10 +143,28 @@ RSpec.describe "Api::V1::Workouts", type: :request do
 
       get "/api/v1/workouts"
 
-      expect(response.parsed_body.first).to include(
-        "id" => offscript.id, "set_count" => 0, "routine" => nil,
-        "activity" => "Climbing", "calories" => 290,
+      session = response.parsed_body.first
+      expect(session).to include("name" => "Climbing", "calories" => 290, "set_count" => 0)
+      expect(session["workouts"].first).to include(
+        "id" => offscript.id, "routine" => nil, "activity" => "Climbing", "calories" => 290,
       )
+    end
+
+    it "groups workouts sharing a training session into one entry (routine names it, meta rolls up)" do
+      session = create(:training_session, user: aaron)
+      warmup = create(:workout, user: aaron, routine: nil, training_session: session,
+        started_at: 65.minutes.ago, finished_at: 55.minutes.ago)
+      create(:health_import, workout: warmup, user: aaron, activity_type: "Indoor Cycling", calories: 109)
+      lift = create(:workout, user: aaron, routine:, training_session: session,
+        started_at: 50.minutes.ago, finished_at: 20.minutes.ago)
+      create(:set_log, workout: lift, exercise: row, set_number: 1)
+
+      get "/api/v1/workouts"
+
+      expect(response.parsed_body.size).to eq(1)
+      entry = response.parsed_body.first
+      expect(entry).to include("name" => "Pull", "set_count" => 1, "calories" => 109)
+      expect(entry["workouts"].map { |w| w["id"] }).to eq([ warmup.id, lift.id ]) # chrono within
     end
 
     it "excludes the active (unfinished) workout and other users' workouts" do

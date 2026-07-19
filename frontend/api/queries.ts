@@ -24,7 +24,7 @@ import type {
   Workout,
   SetLog,
   LogSetInput,
-  WorkoutSummary,
+  SessionSummary,
   WorkoutDetail,
   HealthImportSetup,
   IntegrationEvent,
@@ -167,11 +167,12 @@ export function useDiscardWorkout() {
 
 // --- History (past workouts) --------------------------------------------
 
-// The picked user's finished workouts, newest first (the History tab).
+// The picked user's finished workouts, grouped into training sessions, newest
+// first (the History tab).
 export function useWorkoutHistory() {
   return useQuery({
     queryKey: ['workouts', 'history'],
-    queryFn: () => apiV1Workouts.index<WorkoutSummary[]>(),
+    queryFn: () => apiV1Workouts.index<SessionSummary[]>(),
   })
 }
 

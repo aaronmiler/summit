@@ -156,6 +156,19 @@ export type WorkoutSummary = {
   calories: number | null
 }
 
+// A training session: the day's Log events grouped under one derived header
+// (History groups by this). `id` is an opaque key (e.g. "s12"/"w34"), not a
+// workout id — the tappable rows are its `workouts`.
+export type SessionSummary = {
+  id: string
+  startedAt: string
+  finishedAt: string
+  name: string
+  setCount: number
+  calories: number | null
+  workouts: WorkoutSummary[]
+}
+
 // The logged sets for one movement within a past workout (grouped off the Log).
 export type LoggedExercise = {
   exercise: Exercise

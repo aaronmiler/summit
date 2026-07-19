@@ -6,10 +6,17 @@
      1. <link rel="stylesheet" href="cascadia.css">
      2. Set --app-accent and --app-accent-hover on :root or body
      3. Override --nav-bg, --nav-text, --nav-active as needed
+     4. Optional dark mode: set data-theme="dark" (forced) or
+        data-theme="auto" (follows system) on <html> or <body>
+
+   Extending: components read the semantic tokens (--color-*),
+   never raw palette values. To retheme an app, override the
+   semantic tokens in your app stylesheet — same mechanism the
+   dark theme uses.
    ======================================== */
 
 /* ========================================
-   TOKENS (Custom Properties)
+   TOKENS — RAW PALETTE (constants)
    ======================================== */
 :root {
   /* Primary Brand */
@@ -35,15 +42,57 @@
   --fog: #E2E8F0;
   --overcast: #F1F5F9;
 
-  /* Interactive States */
-  --interactive-focus: var(--portland-blue);
+  /* ========================================
+     TOKENS — SEMANTIC ROLES
+     Components read these. Themes (and apps)
+     override these.
+     ======================================== */
+  color-scheme: light;
+
+  --color-bg: var(--cascadia-snow);
+  --color-surface: #FFFFFF;
+  --color-surface-alt: var(--overcast);
+  --color-text: var(--pnw-ink);
+  --color-text-secondary: var(--timber);
+  --color-text-muted: var(--driftwood);
+  --color-border: var(--fog);
+  --color-border-strong: var(--driftwood);
+  --color-brand: var(--cascadia-green);      /* structural surfaces: nav */
+  --color-brand-fg: var(--cascadia-green);   /* green as text/border on light-or-dark bg */
+  --color-on-accent: var(--pnw-ink);         /* text on --app-accent surfaces */
+  --color-focus: var(--portland-blue);
+  --color-destructive: #C53030;              /* destructive surfaces (buttons) */
+  --color-destructive-fg: #C53030;           /* destructive as text on bg */
+  --color-code-fg: var(--cascadia-blue);
+  --color-backdrop: rgba(26, 35, 50, 0.4);
+
+  /* Semantic tints (badges, alerts) */
+  --tint-positive-bg: #C6F6D5;
+  --tint-positive-fg: #22543D;
+  --tint-warning-bg: #FEFCBF;
+  --tint-warning-fg: #744210;
+  --tint-negative-bg: #FED7D7;
+  --tint-negative-fg: #9B2C2C;
+  --tint-neutral-bg: var(--fog);
+  --tint-neutral-fg: var(--timber);
+  --tint-info-bg: #DBEAFB;
+  --tint-info-fg: #2A5D8F;
+
+  /* Legacy aliases (kept for existing apps) */
+  --interactive-focus: var(--color-focus);
   --interactive-active: var(--cascadia-green);
-  --destructive: #C53030;
+  --destructive: var(--color-destructive);
 
   /* Shadows */
   --shadow-1: 0 1px 3px rgba(26, 35, 50, 0.08);
   --shadow-2: 0 4px 12px rgba(26, 35, 50, 0.12);
   --shadow-3: 0 8px 24px rgba(26, 35, 50, 0.16);
+
+  /* Skeleton shimmer highlight */
+  --skeleton-shimmer: rgba(255, 255, 255, 0.55);
+
+  /* Select dropdown arrow (theme-dependent fill) */
+  --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%234A5568' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
 
   /* Border Radius */
   --radius-sm: 4px;
@@ -64,18 +113,104 @@
   --space-16: 64px;
   --space-20: 80px;
 
+  /* Motion */
+  --duration-fast: 120ms;
+  --duration-base: 180ms;
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+
   /* Per-App Accent (override these per app) */
   --app-accent: var(--oregon-gold);
   --app-accent-hover: var(--portland-yellow);
 
   /* Navigation (override these when accent doesn't contrast with green) */
-  --nav-bg: var(--cascadia-green);
+  --nav-bg: var(--color-brand);
   --nav-text: var(--cascadia-snow);
   --nav-app-name: var(--app-accent);
   --nav-active: var(--app-accent);
 
   /* Typography */
   --font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+/* ========================================
+   DARK THEME (opt-in)
+   data-theme="dark"  — always dark
+   data-theme="auto"  — follows the system
+   Values are hand-picked from the PNW night
+   side, not inverted. All pairs pass WCAG AA.
+   ======================================== */
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --color-bg: #101823;
+  --color-surface: #182231;
+  --color-surface-alt: #1F2B3C;
+  --color-text: #E9EEF4;
+  --color-text-secondary: #A9B7C6;
+  --color-text-muted: #6E7E92;
+  --color-border: #2C3A4E;
+  --color-border-strong: #3D4E66;
+  --color-brand-fg: #4FB08F;
+  --color-destructive-fg: #F08C8C;
+  --color-code-fg: #9FBEE8;
+  --color-backdrop: rgba(0, 0, 0, 0.6);
+
+  --tint-positive-bg: #173229;
+  --tint-positive-fg: #86D4AC;
+  --tint-warning-bg: #362D14;
+  --tint-warning-fg: #E5C465;
+  --tint-negative-bg: #3A1F1F;
+  --tint-negative-fg: #F0A0A0;
+  --tint-neutral-bg: #263346;
+  --tint-neutral-fg: #A9B7C6;
+  --tint-info-bg: #1A2C42;
+  --tint-info-fg: #85B8EA;
+
+  --shadow-1: 0 1px 3px rgba(0, 0, 0, 0.5);
+  --shadow-2: 0 4px 12px rgba(0, 0, 0, 0.55);
+  --shadow-3: 0 8px 24px rgba(0, 0, 0, 0.6);
+
+  --skeleton-shimmer: rgba(255, 255, 255, 0.07);
+
+  --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23A9B7C6' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+}
+
+@media (prefers-color-scheme: dark) {
+  [data-theme="auto"] {
+    color-scheme: dark;
+
+    --color-bg: #101823;
+    --color-surface: #182231;
+    --color-surface-alt: #1F2B3C;
+    --color-text: #E9EEF4;
+    --color-text-secondary: #A9B7C6;
+    --color-text-muted: #6E7E92;
+    --color-border: #2C3A4E;
+    --color-border-strong: #3D4E66;
+    --color-brand-fg: #4FB08F;
+    --color-destructive-fg: #F08C8C;
+    --color-code-fg: #9FBEE8;
+    --color-backdrop: rgba(0, 0, 0, 0.6);
+
+    --tint-positive-bg: #173229;
+    --tint-positive-fg: #86D4AC;
+    --tint-warning-bg: #362D14;
+    --tint-warning-fg: #E5C465;
+    --tint-negative-bg: #3A1F1F;
+    --tint-negative-fg: #F0A0A0;
+    --tint-neutral-bg: #263346;
+    --tint-neutral-fg: #A9B7C6;
+    --tint-info-bg: #1A2C42;
+    --tint-info-fg: #85B8EA;
+
+    --shadow-1: 0 1px 3px rgba(0, 0, 0, 0.5);
+    --shadow-2: 0 4px 12px rgba(0, 0, 0, 0.55);
+    --shadow-3: 0 8px 24px rgba(0, 0, 0, 0.6);
+
+    --skeleton-shimmer: rgba(255, 255, 255, 0.07);
+
+    --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23A9B7C6' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  }
 }
 
 /* ========================================
@@ -91,17 +226,26 @@ html {
   font-size: 16px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  overflow-x: hidden;
 }
 
 body {
   font-family: var(--font-family);
   font-weight: 400;
   line-height: 1.65;
-  color: var(--pnw-ink);
-  background-color: var(--cascadia-snow);
-  overflow-x: hidden;
-  width: 100%;
+  color: var(--color-text);
+  background-color: var(--color-bg);
+}
+
+::selection {
+  background-color: color-mix(in srgb, var(--app-accent) 30%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 /* ========================================
@@ -111,12 +255,14 @@ body {
   font-size: 3rem;
   font-weight: 300;
   line-height: 1.20;
+  letter-spacing: -0.02em;
 }
 
 .page-heading {
   font-size: 2rem;
   font-weight: 400;
   line-height: 1.30;
+  letter-spacing: -0.01em;
 }
 
 .section-heading {
@@ -149,6 +295,10 @@ body {
   line-height: 1.50;
 }
 
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
 /* ========================================
    LAYOUT
    ======================================== */
@@ -172,7 +322,7 @@ body {
 
 .section > .section-heading {
   margin-bottom: var(--space-6);
-  color: var(--cascadia-green);
+  color: var(--color-brand-fg);
 }
 
 .subsection {
@@ -183,7 +333,7 @@ body {
   font-size: 1.125rem;
   font-weight: 500;
   line-height: 1.40;
-  color: var(--pnw-ink);
+  color: var(--color-text);
   margin-bottom: var(--space-4);
 }
 
@@ -221,7 +371,7 @@ body {
   text-decoration: none;
   padding-bottom: var(--space-1);
   border-bottom: 2px solid transparent;
-  transition: border-color 0.15s ease, color 0.15s ease;
+  transition: border-color var(--duration-fast) var(--ease), color var(--duration-fast) var(--ease);
 }
 
 .nav-bar .nav-links a:hover {
@@ -232,25 +382,85 @@ body {
   border-bottom-color: var(--nav-active);
 }
 
-@media (max-width: 640px) {
-  .nav-bar {
-    padding: var(--space-3) var(--space-4);
-    gap: var(--space-4);
-  }
-  .nav-bar .app-name {
-    display: none;
-  }
-  .nav-bar .nav-links {
-    gap: var(--space-4);
-  }
-  .nav-bar .nav-links a {
-    font-size: 0.8125rem;
-  }
+.nav-bar .app-name:focus-visible,
+.nav-bar .nav-links a:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
 }
 
 /* Blue variant */
 .nav-bar--dark {
   --nav-bg: var(--cascadia-blue);
+}
+
+/* ========================================
+   TAB BAR (mobile bottom navigation)
+   Shown below 640px; pair with .has-tab-bar
+   on <body> so content clears it.
+   ======================================== */
+.tab-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: none;
+  background-color: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+  padding-bottom: env(safe-area-inset-bottom);
+  z-index: 900;
+}
+
+.tab-bar-item {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-height: 56px;
+  padding: var(--space-2) 0;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  transition: color var(--duration-fast) var(--ease);
+}
+
+.tab-bar-item .tab-bar-icon {
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.tab-bar-item:hover {
+  color: var(--color-text);
+}
+
+.tab-bar-item.active {
+  color: var(--color-text);
+}
+
+.tab-bar-item.active::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 25%;
+  right: 25%;
+  height: 2px;
+  background-color: var(--app-accent);
+  border-radius: var(--radius-pill);
+}
+
+.tab-bar-item:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: -2px;
+  border-radius: var(--radius-sm);
+}
+
+@media (max-width: 640px) {
+  .tab-bar { display: flex; }
+  .has-tab-bar { padding-bottom: calc(56px + env(safe-area-inset-bottom)); }
 }
 
 /* ========================================
@@ -269,19 +479,34 @@ body {
   border-radius: var(--radius-md);
   border: 1px solid transparent;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition:
+    background-color var(--duration-fast) var(--ease),
+    border-color var(--duration-fast) var(--ease),
+    color var(--duration-fast) var(--ease),
+    box-shadow var(--duration-fast) var(--ease),
+    transform var(--duration-fast) var(--ease);
   text-decoration: none;
 }
 
 .btn:focus-visible {
-  outline: 2px solid var(--interactive-focus);
+  outline: 2px solid var(--color-focus);
   outline-offset: 2px;
+}
+
+.btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
 /* Primary */
 .btn--primary {
   background-color: var(--app-accent);
-  color: var(--pnw-ink);
+  color: var(--color-on-accent);
   border-color: var(--app-accent);
 }
 
@@ -300,31 +525,32 @@ body {
 /* Secondary */
 .btn--secondary {
   background-color: transparent;
-  color: var(--cascadia-green);
-  border-color: var(--cascadia-green);
+  color: var(--color-brand-fg);
+  border-color: var(--color-brand-fg);
 }
 
 .btn--secondary:hover {
-  background-color: var(--cascadia-green);
+  background-color: var(--color-brand);
+  border-color: var(--color-brand);
   color: #fff;
 }
 
 /* Ghost */
 .btn--ghost {
   background-color: transparent;
-  color: var(--cascadia-green);
+  color: var(--color-brand-fg);
   border-color: transparent;
 }
 
 .btn--ghost:hover {
-  background-color: var(--overcast);
+  background-color: var(--color-surface-alt);
 }
 
 /* Destructive */
 .btn--destructive {
-  background-color: var(--destructive);
+  background-color: var(--color-destructive);
   color: #fff;
-  border-color: var(--destructive);
+  border-color: var(--color-destructive);
 }
 
 .btn--destructive:hover {
@@ -338,22 +564,76 @@ body {
 }
 
 /* ========================================
+   FLOATING ACTION BUTTON
+   Mobile-first primary action. Circular is
+   a sanctioned pill exception, like badges.
+   ======================================== */
+.fab {
+  position: fixed;
+  bottom: var(--space-6);
+  right: var(--space-6);
+  width: 56px;
+  height: 56px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--app-accent);
+  color: var(--color-on-accent);
+  border: none;
+  border-radius: var(--radius-pill);
+  font-size: 1.5rem;
+  line-height: 1;
+  box-shadow: var(--shadow-2);
+  cursor: pointer;
+  z-index: 950;
+  transition:
+    background-color var(--duration-fast) var(--ease),
+    box-shadow var(--duration-fast) var(--ease),
+    transform var(--duration-fast) var(--ease);
+}
+
+.fab:hover {
+  background-color: var(--app-accent-hover);
+  box-shadow: var(--shadow-3);
+}
+
+.fab:active {
+  transform: translateY(1px);
+}
+
+.fab:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+@media (max-width: 640px) {
+  .has-tab-bar .fab {
+    bottom: calc(56px + env(safe-area-inset-bottom) + var(--space-4));
+  }
+}
+
+/* ========================================
    CARDS
    ======================================== */
 .card {
-  background-color: #fff;
-  border: 1px solid var(--fog);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   padding: var(--space-6);
-  transition: box-shadow 0.15s ease;
+  transition:
+    box-shadow var(--duration-base) var(--ease),
+    border-color var(--duration-base) var(--ease),
+    transform var(--duration-base) var(--ease);
 }
 
 .card--interactive:hover {
-  box-shadow: var(--shadow-2);
+  box-shadow: var(--shadow-1);
+  border-color: var(--color-border-strong);
+  transform: translateY(-1px);
 }
 
 .card--surface {
-  background-color: var(--overcast);
+  background-color: var(--color-surface-alt);
 }
 
 .card .card-title {
@@ -361,7 +641,7 @@ body {
 }
 
 .card .card-body {
-  color: var(--timber);
+  color: var(--color-text-secondary);
   font-size: 0.875rem;
   line-height: 1.50;
 }
@@ -391,7 +671,7 @@ body {
   display: block;
   font-size: 0.875rem;
   font-weight: 500;
-  color: var(--timber);
+  color: var(--color-text-secondary);
   margin-bottom: var(--space-2);
 }
 
@@ -402,28 +682,34 @@ body {
   font-size: 1rem;
   font-weight: 400;
   line-height: 1.50;
-  color: var(--pnw-ink);
-  background-color: #fff;
-  border: 1px solid var(--fog);
+  color: var(--color-text);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   padding: 10px 12px;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition: border-color var(--duration-fast) var(--ease), box-shadow var(--duration-fast) var(--ease);
 }
 
 .form-input::placeholder {
-  color: var(--driftwood);
+  color: var(--color-text-muted);
 }
 
 .form-input:focus {
   outline: none;
-  border-color: var(--interactive-focus);
+  border-color: var(--color-focus);
   box-shadow: 0 0 0 2px rgba(65, 143, 222, 0.2);
 }
 
 .form-input:focus-visible {
-  outline: 2px solid var(--interactive-focus);
+  outline: 2px solid var(--color-focus);
   outline-offset: 2px;
   box-shadow: none;
+}
+
+.form-input:disabled {
+  background-color: var(--color-surface-alt);
+  color: var(--color-text-muted);
+  cursor: not-allowed;
 }
 
 textarea.form-input {
@@ -433,7 +719,7 @@ textarea.form-input {
 
 select.form-input {
   appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%234A5568' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-image: var(--select-arrow);
   background-repeat: no-repeat;
   background-position: right 12px center;
   padding-right: 36px;
@@ -454,12 +740,108 @@ select.form-input {
   }
 }
 
+/* Checkboxes, radios, switches.
+   Markup: <label class="form-check"><input type="checkbox" class="form-checkbox"> <span>Label</span></label> */
+.form-check {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 44px;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.form-check input {
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.form-checkbox,
+.form-radio {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  background-color: var(--color-surface);
+  border: 1.5px solid var(--color-border-strong);
+  transition:
+    background-color var(--duration-fast) var(--ease),
+    border-color var(--duration-fast) var(--ease),
+    border-width var(--duration-fast) var(--ease);
+}
+
+.form-checkbox {
+  border-radius: var(--radius-sm);
+}
+
+.form-checkbox:checked {
+  background-color: var(--app-accent);
+  border-color: var(--app-accent);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath fill='none' stroke='%231A2332' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' d='M2.5 6.5L5 9l4.5-5.5'/%3E%3C/svg%3E");
+  background-size: 12px 12px;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.form-radio {
+  border-radius: var(--radius-pill);
+}
+
+.form-radio:checked {
+  border-width: 6px;
+  border-color: var(--app-accent);
+}
+
+.switch {
+  appearance: none;
+  position: relative;
+  width: 40px;
+  height: 24px;
+  background-color: var(--color-border-strong);
+  border-radius: var(--radius-pill);
+  transition: background-color var(--duration-fast) var(--ease);
+}
+
+.switch::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  background-color: #fff;
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-1);
+  transition: transform var(--duration-fast) var(--ease);
+}
+
+.switch:checked {
+  background-color: var(--app-accent);
+}
+
+.switch:checked::before {
+  transform: translateX(16px);
+}
+
+.form-checkbox:focus-visible,
+.form-radio:focus-visible,
+.switch:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.form-checkbox:disabled,
+.form-radio:disabled,
+.switch:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* ========================================
    TABLES
    ======================================== */
 .table-container {
   overflow-x: auto;
-  border: 1px solid var(--fog);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
 }
 
@@ -467,28 +849,29 @@ table {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
 }
 
 thead th {
-  background-color: var(--overcast);
-  color: var(--timber);
+  background-color: var(--color-surface-alt);
+  color: var(--color-text-secondary);
   font-size: 0.75rem;
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   text-align: left;
   padding: 12px 16px;
-  border-bottom: 1px solid var(--fog);
+  border-bottom: 1px solid var(--color-border);
 }
 
 tbody td {
   padding: 12px 16px;
-  border-bottom: 1px solid var(--fog);
-  color: var(--pnw-ink);
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text);
 }
 
 tbody tr:nth-child(even) {
-  background-color: var(--cascadia-snow);
+  background-color: var(--color-bg);
 }
 
 tbody tr:last-child td {
@@ -509,28 +892,339 @@ tbody tr:last-child td {
 }
 
 .badge--neutral {
-  background-color: var(--fog);
-  color: var(--timber);
+  background-color: var(--tint-neutral-bg);
+  color: var(--tint-neutral-fg);
 }
 
 .badge--positive {
-  background-color: #C6F6D5;
-  color: #22543D;
+  background-color: var(--tint-positive-bg);
+  color: var(--tint-positive-fg);
 }
 
 .badge--warning {
-  background-color: #FEFCBF;
-  color: #744210;
+  background-color: var(--tint-warning-bg);
+  color: var(--tint-warning-fg);
 }
 
 .badge--negative {
-  background-color: #FED7D7;
-  color: #9B2C2C;
+  background-color: var(--tint-negative-bg);
+  color: var(--tint-negative-fg);
 }
 
 .badge--accent {
   background-color: var(--app-accent);
-  color: var(--pnw-ink);
+  color: var(--color-on-accent);
+}
+
+/* ========================================
+   ALERTS
+   Inline banners. Neutral by default.
+   ======================================== */
+.alert {
+  display: flex;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  border-radius: var(--radius-lg);
+  background-color: var(--color-surface-alt);
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+  line-height: 1.50;
+}
+
+.alert .alert-title {
+  font-weight: 500;
+  display: block;
+  margin-bottom: var(--space-1);
+}
+
+.alert--info {
+  background-color: var(--tint-info-bg);
+  color: var(--tint-info-fg);
+}
+
+.alert--positive {
+  background-color: var(--tint-positive-bg);
+  color: var(--tint-positive-fg);
+}
+
+.alert--warning {
+  background-color: var(--tint-warning-bg);
+  color: var(--tint-warning-fg);
+}
+
+.alert--negative {
+  background-color: var(--tint-negative-bg);
+  color: var(--tint-negative-fg);
+}
+
+/* ========================================
+   TOASTS
+   Transient confirmations. Inverted surface
+   so they read above any page.
+   Markup: <div class="toast-stack"><div class="toast">…</div></div>
+   ======================================== */
+.toast-stack {
+  position: fixed;
+  bottom: var(--space-6);
+  right: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-3);
+  z-index: 1100;
+}
+
+.toast {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-4);
+  background-color: var(--color-text);
+  color: var(--color-surface);
+  font-size: 0.875rem;
+  font-weight: 400;
+  padding: var(--space-3) var(--space-5);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-2);
+}
+
+.toast .toast-action {
+  color: var(--app-accent);
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  background: none;
+  border: none;
+  font-family: var(--font-family);
+  font-size: 0.875rem;
+}
+
+@media (max-width: 640px) {
+  .toast-stack {
+    left: var(--space-4);
+    right: var(--space-4);
+    align-items: stretch;
+  }
+  .has-tab-bar .toast-stack {
+    bottom: calc(56px + env(safe-area-inset-bottom) + var(--space-4));
+  }
+}
+
+/* ========================================
+   TABS
+   In-page section switching. Same accent
+   underline language as nav active links.
+   ======================================== */
+.tabs {
+  display: flex;
+  gap: var(--space-6);
+  border-bottom: 1px solid var(--color-border);
+  overflow-x: auto;
+}
+
+.tab {
+  font-family: var(--font-family);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  padding: var(--space-3) 0;
+  cursor: pointer;
+  white-space: nowrap;
+  text-decoration: none;
+  transition: color var(--duration-fast) var(--ease), border-color var(--duration-fast) var(--ease);
+}
+
+.tab:hover {
+  color: var(--color-text);
+}
+
+.tab.active,
+.tab[aria-selected="true"] {
+  color: var(--color-text);
+  border-bottom-color: var(--app-accent);
+}
+
+.tab:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: -2px;
+  border-radius: var(--radius-sm);
+}
+
+/* ========================================
+   MENU (dropdown panel)
+   Pair with <details>, a popover, or app JS.
+   ======================================== */
+.menu {
+  min-width: 180px;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-1);
+  padding: var(--space-2);
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  font-family: var(--font-family);
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: var(--color-text);
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease);
+}
+
+.menu-item:hover {
+  background-color: var(--color-surface-alt);
+}
+
+.menu-item:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: -2px;
+}
+
+.menu-item--destructive {
+  color: var(--color-destructive-fg);
+}
+
+.menu-divider {
+  border: none;
+  border-top: 1px solid var(--color-border);
+  margin: var(--space-2) calc(-1 * var(--space-2));
+}
+
+/* ========================================
+   PROGRESS
+   Markup: <div class="progress"><div class="progress-fill" style="width: 60%"></div></div>
+   ======================================== */
+.progress {
+  height: 8px;
+  background-color: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background-color: var(--app-accent);
+  border-radius: var(--radius-pill);
+  transition: width var(--duration-base) var(--ease);
+}
+
+/* ========================================
+   SKELETON (loading placeholders)
+   Shimmer stops under prefers-reduced-motion.
+   ======================================== */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background-color: var(--color-surface-alt);
+  border-radius: var(--radius-md);
+}
+
+.skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, var(--skeleton-shimmer), transparent);
+  animation: skeleton-shimmer 1.6s var(--ease) infinite;
+}
+
+.skeleton--text {
+  height: 0.875em;
+  border-radius: var(--radius-sm);
+}
+
+.skeleton--circle {
+  border-radius: var(--radius-pill);
+}
+
+@keyframes skeleton-shimmer {
+  to { transform: translateX(100%); }
+}
+
+/* ========================================
+   EMPTY STATE
+   An empty screen is an invitation to act.
+   ======================================== */
+.empty-state {
+  text-align: center;
+  padding: var(--space-16) var(--space-6);
+}
+
+.empty-state-icon {
+  font-size: 2rem;
+  line-height: 1;
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-4);
+}
+
+.empty-state-title {
+  font-size: 1.125rem;
+  font-weight: 500;
+  line-height: 1.40;
+  margin-bottom: var(--space-2);
+}
+
+.empty-state-description {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  max-width: 400px;
+  margin: 0 auto var(--space-6);
+}
+
+/* ========================================
+   BREADCRUMBS
+   Markup: <ol class="breadcrumbs"><li><a href>Home</a></li><li aria-current="page">Here</li></ol>
+   ======================================== */
+.breadcrumbs {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  list-style: none;
+  font-size: 0.875rem;
+}
+
+.breadcrumbs li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-text);
+}
+
+.breadcrumbs li:not(:last-child)::after {
+  content: '/';
+  color: var(--color-text-muted);
+}
+
+.breadcrumbs a {
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  transition: color var(--duration-fast) var(--ease);
+}
+
+.breadcrumbs a:hover {
+  color: var(--color-text);
+}
+
+.breadcrumbs a:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
 }
 
 /* ========================================
@@ -543,14 +1237,15 @@ tbody tr:last-child td {
 .stat-value {
   font-size: 2rem;
   font-weight: 300;
-  color: var(--cascadia-green);
+  color: var(--color-brand-fg);
   line-height: 1.20;
+  font-variant-numeric: tabular-nums;
 }
 
 .stat-label {
   font-size: 0.75rem;
   font-weight: 500;
-  color: var(--timber);
+  color: var(--color-text-secondary);
   margin-top: var(--space-1);
 }
 
@@ -560,7 +1255,7 @@ tbody tr:last-child td {
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(26, 35, 50, 0.4);
+  background: var(--color-backdrop);
   display: none;
   align-items: center;
   justify-content: center;
@@ -572,7 +1267,7 @@ tbody tr:last-child td {
 }
 
 .modal {
-  background: #fff;
+  background: var(--color-surface);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-3);
   padding: var(--space-8);
@@ -588,7 +1283,7 @@ tbody tr:last-child td {
 }
 
 .modal-body {
-  color: var(--timber);
+  color: var(--color-text-secondary);
   margin-bottom: var(--space-6);
 }
 
@@ -603,7 +1298,7 @@ tbody tr:last-child td {
    ======================================== */
 .divider {
   border: none;
-  border-top: 1px solid var(--fog);
+  border-top: 1px solid var(--color-border);
   margin: var(--space-12) 0;
 }
 
@@ -616,13 +1311,13 @@ tbody tr:last-child td {
 }
 
 .hero .display-hero {
-  color: var(--cascadia-green);
+  color: var(--color-brand-fg);
   margin-bottom: var(--space-4);
 }
 
 .hero .subtitle {
   font-size: 1.125rem;
-  color: var(--timber);
+  color: var(--color-text-secondary);
   max-width: 600px;
   margin: 0 auto;
   line-height: 1.65;
@@ -634,18 +1329,18 @@ tbody tr:last-child td {
 code {
   font-family: 'SF Mono', 'Fira Code', monospace;
   font-size: 0.8125em;
-  background-color: var(--overcast);
+  background-color: var(--color-surface-alt);
   padding: 2px 6px;
   border-radius: var(--radius-sm);
-  color: var(--cascadia-blue);
+  color: var(--color-code-fg);
 }
 
 /* ========================================
    UTILITIES
    ======================================== */
-.text-muted { color: var(--timber); }
-.text-driftwood { color: var(--driftwood); }
-.text-green { color: var(--cascadia-green); }
+.text-muted { color: var(--color-text-secondary); }
+.text-driftwood { color: var(--color-text-muted); }
+.text-green { color: var(--color-brand-fg); }
 .text-accent { color: var(--app-accent); }
 .text-small { font-size: 0.875rem; }
 .mb-2 { margin-bottom: var(--space-2); }
@@ -653,3 +1348,15 @@ code {
 .mb-6 { margin-bottom: var(--space-6); }
 .mb-8 { margin-bottom: var(--space-8); }
 .mt-4 { margin-top: var(--space-4); }
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}

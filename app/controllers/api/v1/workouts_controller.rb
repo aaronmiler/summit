@@ -7,27 +7,20 @@ module Api
     class WorkoutsController < BaseController
       before_action :require_current_user!
 
-      # GET /api/v1/workouts -> history: this user's finished workouts, most
-      # recent first, as lightweight summaries (the History tab list).
+      # GET /api/v1/workouts -> history: this user's finished workouts grouped
+      # into training sessions, most recent first. A session bundles the day's
+      # Log events (warmup + routine + watch strength) under one derived header;
+      # its `workouts` are the tappable rows. A workout with no session (shouldn't
+      # occur post-backfill) stands alone as a one-workout session.
       def index
         workouts = current_user.workouts.where.not(finished_at: nil)
           .includes(:routine, :health_imports).order(started_at: :desc)
         set_counts = SetLog.where(workout_id: workouts.map(&:id)).group(:workout_id).count
 
-        render json: workouts.map { |w|
-          # Off-script workouts are materialized from a health import; surface its
-          # activity name + calories so the row isn't a nameless "0 sets".
-          import = w.health_imports.first
-          {
-            "id" => w.id,
-            "started_at" => w.started_at,
-            "finished_at" => w.finished_at,
-            "routine" => w.routine&.as_json(only: %i[id name]),
-            "set_count" => set_counts[w.id] || 0,
-            "activity" => import&.activity_type,
-            "calories" => import&.calories
-          }
-        }
+        summaries = workouts.map { |w| workout_summary(w, set_counts[w.id] || 0) }
+        grouped = summaries.group_by { |s| s.delete(:group_key) }
+        render json: grouped.map { |key, members| session_summary(key, members) }
+          .sort_by { |sess| sess["finished_at"] }.reverse
       end
 
       # GET /api/v1/workouts/:id -> one past workout's detail, sets grouped by
@@ -63,6 +56,10 @@ module Api
       def update
         workout = current_user.workouts.find(params[:id])
         workout.update!(params.permit(:finished_at, :notes))
+        # Boundary 2: on finish, settle the routine workout into its session
+        # (pulling in the warmup / watch imports around it). A notes-only edit
+        # doesn't re-group.
+        TrainingSession.absorb(workout) if workout.saved_change_to_finished_at? && workout.finished_at?
         render json: workout.as_json(only: %i[id started_at finished_at notes])
       end
 
@@ -73,11 +70,56 @@ module Api
         workout = current_user.workouts.find(params[:id])
         return render(json: { error: "workout has logged sets" }, status: 422) if workout.set_logs.exists?
 
+        session = workout.training_session
         workout.destroy!
+        # Don't leave an empty session behind when its only member is discarded.
+        session.destroy if session && !session.workouts.exists?
         head :no_content
       end
 
       private
+
+      # One workout as a History sub-row. Off-script workouts are materialized
+      # from a health import, so surface its activity + calories (else the row is
+      # a nameless "0 sets"). `group_key` clusters rows into a session and is
+      # stripped before serialization.
+      def workout_summary(workout, set_count)
+        import = workout.health_imports.first
+        {
+          "id" => workout.id,
+          "started_at" => workout.started_at,
+          "finished_at" => workout.finished_at,
+          "routine" => workout.routine&.as_json(only: %i[id name]),
+          "set_count" => set_count,
+          "activity" => import&.activity_type,
+          "calories" => import&.calories,
+          group_key: workout.training_session_id ? "s#{workout.training_session_id}" : "w#{workout.id}"
+        }
+      end
+
+      # A training session as History sees it: a derived header (name, rolled-up
+      # sets/calories, span) over its workouts, ordered oldest-first within the
+      # session so the warmup reads before the lift.
+      def session_summary(key, members)
+        ordered = members.sort_by { |m| m["started_at"] }
+        calories = ordered.filter_map { |m| m["calories"] }
+        {
+          "id" => key,
+          "started_at" => ordered.first["started_at"],
+          "finished_at" => ordered.filter_map { |m| m["finished_at"] }.max || ordered.last["started_at"],
+          "name" => session_name(ordered),
+          "set_count" => ordered.sum { |m| m["set_count"] },
+          "calories" => calories.any? ? calories.sum : nil,
+          "workouts" => ordered
+        }
+      end
+
+      # The session's display name: a routine among its members, else the first
+      # activity, else off-script.
+      def session_name(members)
+        routine = members.filter_map { |m| m["routine"] }.first
+        routine ? routine["name"] : (members.filter_map { |m| m["activity"] }.first || "Off-script")
+      end
 
       def workout_payload(workout)
         routine = workout.routine
