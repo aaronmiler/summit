@@ -20,6 +20,7 @@ import {
 import type {
   User,
   Exercise,
+  ExerciseInput,
   Routine,
   RoutineDetail,
   RoutineInput,
@@ -75,6 +76,36 @@ export function useExercises() {
   return useQuery({
     queryKey: ['exercises'],
     queryFn: () => apiV1Exercises.index<Exercise[]>(),
+  })
+}
+
+// Add a movement to the library -> refresh the list.
+export function useCreateExercise() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (input: ExerciseInput) => apiV1Exercises.create<Exercise>({ data: input }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['exercises'] }),
+  })
+}
+
+// Rename / retype / regroup a movement -> refresh the list. Renames are safe
+// server-side (FKs are by id), so history is untouched. id rides inside `data`.
+export function useUpdateExercise(id: number) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (input: ExerciseInput) =>
+      apiV1Exercises.update<Exercise>({ data: { id, ...input } }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['exercises'] }),
+  })
+}
+
+// Delete a movement -> refresh the list. The server 422s (with a message on
+// `error.body.error`) when it's used by a routine, progression, or logged set.
+export function useDeleteExercise() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => apiV1Exercises.destroy({ id }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['exercises'] }),
   })
 }
 

@@ -24,6 +24,27 @@ export type Exercise = {
   muscleGroup: string | null
 }
 
+// The modality options, in widget-family order, for the editor dropdown. Mirrors
+// the Exercise#modality enum (Rails is the source of truth; this is the UI list).
+export const MODALITIES: Modality[] = [
+  'barbell',
+  'dumbbell',
+  'machine',
+  'bodyweight',
+  'band',
+  'hangboard',
+  'cardio',
+  'climbing',
+]
+
+// The create/update payload for a movement. camelCase; the client serializes to
+// snake_case on the way out.
+export type ExerciseInput = {
+  name: string
+  modality: Modality
+  muscleGroup: string | null
+}
+
 // Routine as it comes back from the index (no slots).
 export type Routine = {
   id: number
