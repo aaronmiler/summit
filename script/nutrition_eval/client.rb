@@ -46,7 +46,7 @@ module NutritionEval
       end
       parsed = JSON.parse(res.body)
       content = parsed.dig("choices", 0, "message", "content").to_s
-      [content, latency_ms]
+      [ content, latency_ms ]
     end
 
     private

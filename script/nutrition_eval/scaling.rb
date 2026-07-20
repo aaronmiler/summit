@@ -9,11 +9,11 @@ require_relative "strategies"
 
 # [food, base phrase, scaled phrase, multiplier]
 TRIALS = [
-  ["pizza",          "1 slice of cheese pizza",   "3 slices of cheese pizza",   3],
-  ["white rice",     "1 cup of white rice",       "2 cups of white rice",       2],
-  ["chicken breast", "4 oz grilled chicken breast", "8 oz grilled chicken breast", 2],
-  ["almonds",        "1 oz of almonds",           "3 oz of almonds",            3],
-  ["banana",         "1 banana",                  "2 bananas",                  2]
+  [ "pizza",          "1 slice of cheese pizza",   "3 slices of cheese pizza",   3 ],
+  [ "white rice",     "1 cup of white rice",       "2 cups of white rice",       2 ],
+  [ "chicken breast", "4 oz grilled chicken breast", "8 oz grilled chicken breast", 2 ],
+  [ "almonds",        "1 oz of almonds",           "3 oz of almonds",            3 ],
+  [ "banana",         "1 banana",                  "2 bananas",                  2 ]
 ].freeze
 
 client = NutritionEval::Client.new(model: ENV.fetch("EVAL_MODEL", "vault-assistant"), no_cache: true)

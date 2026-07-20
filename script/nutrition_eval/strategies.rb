@@ -41,7 +41,7 @@ module NutritionEval
       list =
         if parsed.is_a?(Hash) && parsed["items"].is_a?(Array) then parsed["items"]
         elsif parsed.is_a?(Array) then parsed
-        elsif parsed.is_a?(Hash) && parsed.key?("name") then [parsed]
+        elsif parsed.is_a?(Hash) && parsed.key?("name") then [ parsed ]
         elsif parsed.is_a?(Hash) && parsed["items"] == [] then []
         else nil
         end
@@ -92,7 +92,7 @@ module NutritionEval
     def name = "single_#{@style}#{@json_mode ? '_json' : ''}"
 
     def run(text)
-      msgs = [{ role: "system", content: Prompts::SINGLE.fetch(@style) }]
+      msgs = [ { role: "system", content: Prompts::SINGLE.fetch(@style) } ]
       msgs.concat(@per_unit ? Prompts::FEWSHOT_PERUNIT : Prompts::FEWSHOT) unless @style == :min
       msgs << { role: "user", content: text }
 
@@ -100,7 +100,7 @@ module NutritionEval
       parsed = Extract.json(content)
       items = Extract.items(parsed)
       items = items.map { |i| Extract.scale_by_amount(i) } if @per_unit && items
-      { items: items || [], parse_ok: !items.nil?, calls: 1, latency_ms: ms, raw: [content] }
+      { items: items || [], parse_ok: !items.nil?, calls: 1, latency_ms: ms, raw: [ content ] }
     end
   end
 
@@ -119,7 +119,7 @@ module NutritionEval
 
       # Pass 1: decompose into components.
       dc, ms = @client.chat(
-        [{ role: "system", content: Prompts::DECOMPOSE }, { role: "user", content: text }],
+        [ { role: "system", content: Prompts::DECOMPOSE }, { role: "user", content: text } ],
         json_mode: @json_mode
       )
       raw << dc; total_ms += ms; calls += 1
@@ -138,7 +138,7 @@ module NutritionEval
 
         prompt = Prompts.estimate_item(cname, portion)
         ic, ims = @client.chat(
-          [{ role: "system", content: prompt }, { role: "user", content: "#{cname} (#{portion})" }],
+          [ { role: "system", content: prompt }, { role: "user", content: "#{cname} (#{portion})" } ],
           json_mode: @json_mode, max_tokens: 300
         )
         raw << ic; total_ms += ims; calls += 1
