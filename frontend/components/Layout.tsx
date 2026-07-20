@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { NavLink } from 'react-router-dom'
 import type { User } from '~/types'
 import { useSwitchUser } from '~/api/queries'
+import UpdateBanner from './UpdateBanner'
 
 // Cascadia nav shell: sticky green bar, "Summit" in Oregon Gold, active-link
 // underline. The current-user chip on the right switches user (back to picker).
@@ -38,6 +39,7 @@ export default function Layout({ user, children }: { user: User; children: React
           {user.name}
         </button>
       </nav>
+      <UpdateBanner />
       <main className="page-container">{children}</main>
     </>
   )

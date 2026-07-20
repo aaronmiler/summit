@@ -1043,3 +1043,19 @@
 .add-item-toggle {
   align-self: flex-start;
 }
+
+/* Update-available banner (UpdateBanner.tsx): sits between the nav and page,
+   reusing the Cascadia .alert--info tint. Message left, actions right; wraps on
+   narrow screens. Margin matches the page gutter so it lines up with content. */
+.update-banner {
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  margin: var(--space-4);
+}
+
+.update-banner__actions {
+  display: flex;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}

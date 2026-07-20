@@ -9,6 +9,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
+  apiV1Health,
   apiV1Sessions,
   apiV1Users,
   apiV1Exercises,
@@ -466,4 +467,42 @@ export function useIntegrationEvents() {
       )
     },
   })
+}
+
+// ---------------------------------------------------------------------------
+// Version check
+//
+// The server reports the build's git SHA (Api::V1::Health#version; "dev" when
+// BUILD_SHA is unset — local/dev). We remember the first SHA we see this
+// session — the build this loaded bundle belongs to — and flag when the server
+// moves past it, meaning a deploy landed while the app was open. "dev" never
+// captures and never triggers, so it stays quiet in development.
+
+// Pure decision, unit-tested: given the SHA we rendered with and the SHA the
+// server now reports, return the (possibly newly-captured) rendered SHA and
+// whether an update is available.
+export function nextVersionState(
+  rendered: string | null,
+  server: string | undefined,
+): { rendered: string | null; updateAvailable: boolean } {
+  if (!server || server === 'dev') return { rendered, updateAvailable: false }
+  if (rendered === null) return { rendered: server, updateAvailable: false }
+  return { rendered, updateAvailable: server !== rendered }
+}
+
+let renderedVersion: string | null = null
+
+export function useVersionCheck() {
+  const { data } = useQuery({
+    queryKey: ['health'],
+    queryFn: () => apiV1Health.show<{ status: string; version: string }>(),
+    // Poll periodically, and — the important one for the PWA — on window focus,
+    // so bringing the app back to the foreground checks for a deploy at once.
+    refetchInterval: 60_000,
+    refetchOnWindowFocus: true,
+  })
+
+  const state = nextVersionState(renderedVersion, data?.version)
+  renderedVersion = state.rendered
+  return { updateAvailable: state.updateAvailable }
 }

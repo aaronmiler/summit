@@ -85,6 +85,13 @@ USER 1000:1000
 COPY --chown=rails:rails --from=build "${BUNDLE_PATH}" "${BUNDLE_PATH}"
 COPY --chown=rails:rails --from=build /rails /rails
 
+# Bake the git SHA of this build so the running app can report its version
+# (Api::V1::Health) — the frontend polls it to prompt a refresh after a deploy.
+# CI passes --build-arg BUILD_SHA=<github.sha>; unset locally, so it stays "dev".
+# Placed after the COPYs to keep the per-commit change out of the cached layers.
+ARG BUILD_SHA
+ENV BUILD_SHA=${BUILD_SHA}
+
 # Entrypoint prepares the database.
 ENTRYPOINT ["/rails/bin/docker-entrypoint"]
 
