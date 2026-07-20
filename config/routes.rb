@@ -20,6 +20,8 @@ Rails.application.routes.draw do
       # is index-only — it backs the routine editor's slot picker.
       resources :exercises, only: %i[index create update destroy], defaults: { export: true }
       resources :progressions, only: %i[index], defaults: { export: true }
+      # Programs group routines for the Today picker; full CRUD from the Library.
+      resources :programs, only: %i[index create update destroy], defaults: { export: true }
       resources :routines, only: %i[index show create update destroy], defaults: { export: true }
 
       # Logging. `current` is the active (unfinished) workout for the picked user
@@ -29,6 +31,22 @@ Rails.application.routes.draw do
         resources :set_logs, only: %i[create], defaults: { export: true }
       end
       resources :set_logs, only: %i[destroy], defaults: { export: true }
+
+      # Nutrition. A meal is logged as freeform text and parsed into per-item
+      # macros asynchronously; `parse` re-runs it, `update` edits it (re-parsing on
+      # a text change). Items are hand-correctable: edit name/unit (`update`),
+      # add/remove (`create`/`destroy`), `rescale` a portion (no LLM), or
+      # `estimate` one item's macros (one LLM call). See docs/nutrition_parsing.md.
+      resources :meals, only: %i[index create show update], defaults: { export: true } do
+        post :parse, on: :member, defaults: { export: true }
+        resources :food_entries, only: %i[create], defaults: { export: true }
+      end
+      resources :food_entries, only: %i[update destroy], defaults: { export: true } do
+        member do
+          post :rescale, defaults: { export: true }
+          post :estimate, defaults: { export: true }
+        end
+      end
 
       # Apple Health push (Health Auto Export). `create` is headless: Bearer-token
       # auth, not the session cookie — so it's not exported. `setup` is the

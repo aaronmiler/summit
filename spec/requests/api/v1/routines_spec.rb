@@ -20,6 +20,33 @@ RSpec.describe "Api::V1::Routines", type: :request do
       )
       expect(response.parsed_body.first).not_to have_key("routine_exercises")
     end
+
+    it "includes each routine's program (id + name), or null when ungrouped" do
+      program = create(:program, name: "Winter Strength")
+      create(:routine, name: "Pull/Core", program:)
+      create(:routine, name: "Zone 2 Cardio")
+
+      get "/api/v1/routines"
+
+      by_name = response.parsed_body.index_by { |r| r["name"] }
+      expect(by_name["Pull/Core"]["program"]).to eq("id" => program.id, "name" => "Winter Strength")
+      expect(by_name["Zone 2 Cardio"]["program"]).to be_nil
+    end
+  end
+
+  describe "program assignment" do
+    it "assigns and clears a routine's program via program_id" do
+      program = create(:program, name: "Winter Strength")
+      routine = create(:routine, name: "Pull/Core")
+
+      patch "/api/v1/routines/#{routine.id}", params: { program_id: program.id }, as: :json
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body["program"]).to eq("id" => program.id, "name" => "Winter Strength")
+      expect(routine.reload.program_id).to eq(program.id)
+
+      patch "/api/v1/routines/#{routine.id}", params: { program_id: nil }, as: :json
+      expect(routine.reload.program_id).to be_nil
+    end
   end
 
   describe "GET /api/v1/routines/:id" do

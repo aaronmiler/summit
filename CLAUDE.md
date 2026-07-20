@@ -11,8 +11,11 @@ Rails 8.1 API-only + React/TS (Vite). See `README.md` for setup.
 - Types: `yarn typecheck` (`tsc --noEmit`). Lint Ruby: `bundle exec rubocop`.
 
 ## Source-of-truth docs
-- `docs/data_model.md` — the schema and **why** it's shaped this way. Read it
-  before touching models or migrations; it's authoritative over this file.
+- `docs/data_model.md` — **design rationale / history, not a spec**: *why* the
+  schema's shaped this way (no `UserProgression`, immutable Log, the XOR). Read it
+  for background before touching models — but the enforced rules live in
+  `spec/models/data_model_spec.rb`, and its forward-looking bits are mostly
+  decided now. Don't treat its deferrals as binding; iterate.
 - `docs/open_questions.md` — parked UX/flow decisions (nutrition usage, the LLM
   interaction, PWA/offline). Behavior, not schema.
 
@@ -29,7 +32,7 @@ Before adding a `current_*`, `active`, or preference column, check whether it ca
 be derived instead. (We dropped `UserProgression` and `Routine.active` for this.)
 
 ## Data model shape
-Three buckets (`docs/data_model.md` is authoritative):
+Three buckets (rationale in `docs/data_model.md`):
 - **Context** — `User` (fat model, no separate `Profile`).
 - **Library** (shared, evergreen, freely edited) — `Routine → RoutineExercise →
   Exercise / Progression → ProgressionPhase`.

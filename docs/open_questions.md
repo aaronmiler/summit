@@ -7,6 +7,12 @@
 
 ## Nutrition (schema decided, usage not)
 
+> **Update 2026-07-19:** the *parsing* approach is now decided and specced in
+> [`nutrition_parsing.md`](./nutrition_parsing.md) (eval-backed: totals-mode single-shot
+> on `vault-assistant`, structured `amount`/`unit`, correction = code-side rescale,
+> async parse). The questions below are the parts still open — mainly input method,
+> trigger UX, and targets.
+
 We settled `Meal` (raw text = truth) → `FoodEntry` (nullable LLM-derived macros),
 but never discussed how it's actually used:
 

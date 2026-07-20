@@ -13,9 +13,12 @@ import {
   apiV1Users,
   apiV1Exercises,
   apiV1Progressions,
+  apiV1Programs,
   apiV1Routines,
   apiV1Workouts,
   apiV1SetLogs,
+  apiV1Meals,
+  apiV1FoodEntries,
 } from '~/api'
 import type {
   User,
@@ -24,6 +27,8 @@ import type {
   Routine,
   RoutineDetail,
   RoutineInput,
+  Program,
+  ProgramInput,
   ProgressionSummary,
   Workout,
   SetLog,
@@ -32,6 +37,10 @@ import type {
   WorkoutDetail,
   HealthImportSetup,
   IntegrationEvent,
+  Meal,
+  MealInput,
+  FoodEntry,
+  FoodEntryInput,
 } from '~/types'
 
 // The current user (from the session cookie), or null before one is picked.
@@ -131,6 +140,47 @@ export function useProgressions() {
   return useQuery({
     queryKey: ['progressions'],
     queryFn: () => apiV1Progressions.index<ProgressionSummary[]>(),
+  })
+}
+
+// --- Programs (grouping for the Today picker) ---------------------------
+
+// All programs, for the Today sections + the editor's program picker.
+export function usePrograms() {
+  return useQuery({
+    queryKey: ['programs'],
+    queryFn: () => apiV1Programs.index<Program[]>(),
+  })
+}
+
+// Program writes touch routines too: routines embed the program's name, and a
+// delete nullifies their program_id — so both caches refresh.
+function invalidatePrograms(queryClient: ReturnType<typeof useQueryClient>) {
+  queryClient.invalidateQueries({ queryKey: ['programs'] })
+  queryClient.invalidateQueries({ queryKey: ['routines'] })
+}
+
+export function useCreateProgram() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (input: ProgramInput) => apiV1Programs.create<Program>({ data: input }),
+    onSuccess: () => invalidatePrograms(queryClient),
+  })
+}
+
+export function useUpdateProgram(id: number) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (input: ProgramInput) => apiV1Programs.update<Program>({ data: { id, ...input } }),
+    onSuccess: () => invalidatePrograms(queryClient),
+  })
+}
+
+export function useDeleteProgram() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => apiV1Programs.destroy({ id }),
+    onSuccess: () => invalidatePrograms(queryClient),
   })
 }
 
@@ -279,6 +329,112 @@ export function useHealthImportSetup() {
       const data = await res.json()
       return { url: data.url, headerKey: data.header_key, headerValue: data.header_value }
     },
+  })
+}
+
+// --- Nutrition ----------------------------------------------------------
+
+// The picked user's meals, newest first (the nutrition log).
+export function useMeals() {
+  return useQuery({
+    queryKey: ['meals'],
+    queryFn: () => apiV1Meals.index<Meal[]>(),
+  })
+}
+
+// One meal with its entries + parse status. Polls while the async parse is in
+// flight so the entries appear as soon as the job lands.
+export function useMeal(id: string | undefined) {
+  return useQuery({
+    queryKey: ['meals', id],
+    queryFn: () => apiV1Meals.show<Meal>({ id: id! }),
+    enabled: id != null,
+    refetchInterval: (query) => (query.state.data?.parseStatus === 'pending' ? 1500 : false),
+  })
+}
+
+// Log a meal (freeform text) -> kicks off the async parse; refresh the list.
+export function useLogMeal() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (rawText: string) => apiV1Meals.create<Meal>({ data: { rawText } }),
+    onSuccess: (meal) => {
+      queryClient.invalidateQueries({ queryKey: ['meals'] })
+      queryClient.setQueryData(['meals', String(meal.id)], meal)
+    },
+  })
+}
+
+// Edit a meal (text re-parses; notes/eaten_at don't). id rides inside `data`.
+export function useUpdateMeal(id: number) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (input: MealInput) => apiV1Meals.update<Meal>({ data: { id, ...input } }),
+    onSuccess: (meal) => {
+      queryClient.setQueryData(['meals', String(id)], meal)
+      queryClient.invalidateQueries({ queryKey: ['meals'] })
+    },
+  })
+}
+
+// Re-run the parse on the existing text (a bad LLM draw) -> refetch the meal.
+export function useReparseMeal(id: number) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => apiV1Meals.parse<Meal>({ id }),
+    onSuccess: (meal) => queryClient.setQueryData(['meals', String(id)], meal),
+  })
+}
+
+// Entry writes all change a meal's derived items -> refetch that meal (+ list).
+function invalidateMeals(queryClient: ReturnType<typeof useQueryClient>) {
+  queryClient.invalidateQueries({ queryKey: ['meals'] })
+}
+
+// Add an item the parse missed (macros come later via estimate).
+export function useAddFoodEntry(mealId: number) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (input: FoodEntryInput) =>
+      apiV1FoodEntries.create<FoodEntry>({ data: { mealId, ...input } }),
+    onSuccess: () => invalidateMeals(queryClient),
+  })
+}
+
+// Edit an item's name/unit. id rides inside `data`.
+export function useUpdateFoodEntry() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, ...input }: FoodEntryInput & { id: number }) =>
+      apiV1FoodEntries.update<FoodEntry>({ data: { id, ...input } }),
+    onSuccess: () => invalidateMeals(queryClient),
+  })
+}
+
+export function useDeleteFoodEntry() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => apiV1FoodEntries.destroy({ id }),
+    onSuccess: () => invalidateMeals(queryClient),
+  })
+}
+
+// Correct a portion -> macros rescale in code (no LLM). id rides inside `data`.
+export function useRescaleFoodEntry() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, amount }: { id: number; amount: number }) =>
+      apiV1FoodEntries.rescale<FoodEntry>({ data: { id, amount } }),
+    onSuccess: () => invalidateMeals(queryClient),
+  })
+}
+
+// Fill an item's macros with one (synchronous) LLM call.
+export function useEstimateFoodEntry() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => apiV1FoodEntries.estimate<FoodEntry>({ id }),
+    onSuccess: () => invalidateMeals(queryClient),
   })
 }
 

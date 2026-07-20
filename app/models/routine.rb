@@ -1,4 +1,5 @@
 class Routine < ApplicationRecord
+  belongs_to :program, optional: true # ungrouped routines are fine (Today "Other").
   has_many :routine_exercises, -> { order(:position) }, dependent: :destroy
   has_many :workouts, dependent: :nullify
 

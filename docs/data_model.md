@@ -1,17 +1,20 @@
 # Summit — Data Model (Working Draft v2)
 
-> Status: **implemented (first pass).** The schema is generated and migrated — 11
-> tables with models, factories, and a behavior spec pinning the load-bearing
-> decisions (`spec/models/data_model_spec.rb`). The library ships **empty** (no
-> seeds). Remaining unknowns are flagged under "Still open."
+> Status: **design rationale & history — not a spec.** This explains *why* the
+> model is shaped the way it is; it does not govern new work. The load-bearing
+> invariants are enforced in `spec/models/data_model_spec.rb` — a passing test,
+> not this prose, is the source of truth. The forward-looking sections ("Still
+> open", "Not modeling yet") are a snapshot of past thinking; most is now decided
+> (see "Decisions since v2"), so treat none of it as binding — iterate freely.
+> 12 tables, migrated; the library ships **empty** (no seeds).
 
 ## The core split: **Library** vs **Log** (vs **Context**)
 
 Everything sorts into three buckets. Getting this split right is what makes the
 rest fall out:
 
-- **Library** — reusable *definitions*, evergreen. Edited freely. `Routine`,
-  `RoutineExercise`, `Exercise`, `Progression`, `ProgressionPhase`.
+- **Library** — reusable *definitions*, evergreen. Edited freely. `Program`,
+  `Routine`, `RoutineExercise`, `Exercise`, `Progression`, `ProgressionPhase`.
 - **Log** — immutable *events*, what actually happened. Never rewritten by a plan
   edit. `Workout`, `SetLog`, `HealthImport`, `Meal`, `FoodEntry`.
 - **Context** — who the user is and where they're headed; the LLM prompt payload.
@@ -23,7 +26,7 @@ stored on the plan. This is the single idea the whole model turns on.
 
 ```
 Context:  User  (equipment, direction/goals, preferences, units, notes)
-Library:  Routine → RoutineExercise → Exercise / Progression → ProgressionPhase
+Library:  Program → Routine → RoutineExercise → Exercise / Progression → ProgressionPhase
 Log:      Workout → SetLog          (+ HealthImport, + off-script cardio)
           Meal → FoodEntry
 ```
@@ -52,15 +55,27 @@ is the source of truth.
 
 ### Library
 
+**`Program`** — a named grouping of routines ("Winter Strength", "Climbing
+Base"), added 2026-07-19. Exists so the Today picker isn't a flat wall of
+routines — **grouping only, not a schedule** (no day-of-week binding, no
+periodization phases; those stay soft — see decision #12).
+- Fields: `name`, `notes`. `has_many :routines, dependent: :nullify`.
+- **Deleting a program never deletes its routines** — the FK nullifies, so they
+  fall back to ungrouped ("Other" on Today). Same nullify pattern as
+  `TrainingSession`.
+- **No "current program" column** — like current routine, it's derived: the
+  program of your most recent workout's routine. Per-user for free.
+
 **`Routine`** — the reusable, drop-in training block ("Pull/Core", "Bouldering",
 "Zone 2 cardio"). The unit you pick and *do*. Order-independent, run forever.
 - Fields: `name`, `notes` (format, rest guidance, warmup, periodization flavor),
+  `program_id` (**nullable** — one program per routine, ungrouped is fine),
   optional soft hints for the generator (`tags` — Postgres `text[]`,
   `preferred_frequency`).
 - **No `active` column.** "What am I running now" is emergent and *per-user* —
   the routine on your most recent `Workout`. A shared boolean couldn't express
   "she's on Bouldering, he's on Pull/Core" anyway.
-- `has_many :routine_exercises` (ordered).
+- `belongs_to :program, optional: true`; `has_many :routine_exercises` (ordered).
 
 **`RoutineExercise`** — one exercise slot within a routine.
 - Fields: `routine_id`, `position` (the *suggested* order — biased to, not
@@ -200,6 +215,10 @@ building, nutrition parsing) as those land. Resolves open-question #2.
 **`FoodEntry`** — LLM-derived per-item macros; belongs to `Meal`.
 - Fields: `meal_id`, `name`, `calories?`, `protein?`, `carbs?`, `fat?` (all
   nullable), `confidence`/`parse_notes`. Text is truth; macros are derived.
+- **Planned (2026-07-19):** add `amount` (`decimal`) + `unit` (`string`) so the
+  stored macro *totals* are user-correctable via a code-side linear rescale — the
+  model captures the portion but won't multiply by it. Rationale + eval in
+  [`nutrition_parsing.md`](./nutrition_parsing.md).
 
 ---
 
@@ -220,36 +239,56 @@ building, nutrition parsing) as those land. Resolves open-question #2.
 8. **"Next man up" logging.** Routine order is a *bias*, not a constraint; log any
    exercise in any order; off-script and ad-hoc (warmup cardio) are first-class.
 9. **`modality` drives the UI.** Picks the logging widget and which fields exist.
-10. **No level above `Routine`.** Intent = `User` context; "what am I running" =
-    recency (most recent `Workout`); grouping = a tag if ever needed. A real
-    `Plan` wrapper is deferred (see Not modeling yet).
+10. **`Program` groups routines; nothing schedules them** (updated 2026-07-19).
+    A `Program` is a grouping label so the Today picker isn't a flat list — that's
+    all it is. Intent still = `User` context; "what am I running" still = recency
+    (most recent `Workout`); a real scheduling/`Plan` wrapper (day-of-week,
+    periodization) stays deferred (see Not modeling yet). *(Originally: no level
+    above `Routine`, grouping = a tag. The picker got busy enough — with lots of
+    options — to warrant a real grouping object over an overloaded tag.)*
 13. **No per-user state tables.** Current routine, current progression phase, and
     working weight are all *derived from the Log*, never stored. `UserProgression`
     was dropped for this reason.
 11. **Weekly summaries computed on the fly**, not materialized (2 users, small data).
 12. **Periodization / weekly scheduling is soft** — freeform notes + LLM
-    system-prompt logic at generation time, not schema (no `Program`, no rigid
-    day-of-week binding).
+    system-prompt logic at generation time, not schema. `Program` groups routines
+    but carries **no schedule**: no rigid day-of-week binding, no periodization phases.
 
 ---
+
+## Decisions since v2 (2026-07-19)
+
+Settled in conversation; folded in so they don't evaporate.
+
+- **This doc is rationale/history, not a spec.** Invariants live in
+  `spec/models/data_model_spec.rb`; the deferrals below aren't binding. Iterate.
+- **Single-user scoping is the working assumption.** Build for one user at a time;
+  cross-user sharing (progress, logs, meals) is additive later. Resolves open
+  question #3 — everything is already per-user, so sharing is purely additive.
+- **Nutrition & health metrics: iterate from what exists.** `Meal`/`FoodEntry`
+  tables and `HealthImport` ingestion are the starting points; grow the flow and
+  any parse depth incrementally, not by designing it upfront.
+- **`Program`** added — grouping only, no schedule (see decision #10).
 
 ## Still open
 
 1. **`HealthImport` parse depth.** Store the raw screenshot only, or LLM-extract
-   HR / calories / duration into the summary columns? (Leaning: raw first, parse
-   when the flow exists — summary columns nullable so no migration is needed when
-   parsing arrives.)
+   HR / calories / duration into the summary columns? Direction: **iterate** from
+   the working ingestion — raw first, parse when the flow needs it (summary
+   columns nullable, so no migration when parsing arrives).
 2. ~~**LLM audit / re-parse table.**~~ **Resolved 2026-07-16** →
    `IntegrationEvent` (see Log). One general interaction log covers inbound
    webhooks and outbound LLM calls; parsed results still live in their own
    tables, this logs the interaction around them.
-3. **Cross-user visibility** (progress, logs, meals) is a *policy / query*
-   question, not schema — `Workout` and every derived phase are already per-user.
-   Decide when the UI needs it.
+3. ~~**Cross-user visibility.**~~ **Resolved 2026-07-19** → single-user scoping is
+   the working assumption; sharing (progress, logs, meals) is additive later. It
+   was never schema — `Workout` and every derived phase are already per-user.
 
 ## Not modeling yet
 
-- A rigid `Program`/schedule wrapper above `Routine` (grouping is emergent for now).
+- A **scheduling** wrapper above `Routine` — day-of-week binding, periodization
+  phases. `Program` now exists (2026-07-19) but is **grouping-only**; it carries
+  no schedule.
 - **Bodyweight / measurements** — tracked in Apple Health today; pull in later as
   a small dedicated table (`user_id`, `weight`, `measured_at`) when the flow exists.
 - **Climbing grade / send detail** (V-scale) — sessions come in as `HealthImport`;

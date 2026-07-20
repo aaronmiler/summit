@@ -127,12 +127,52 @@
   color: inherit;
 }
 
-/* A wrapping row of badges (frequency + tags). */
+/* A wrapping row of badges (program + frequency + tags). */
 .badge-row {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
   margin-top: var(--space-4);
+}
+
+/* Programs: Today section headings + the Library management list. */
+.program-group {
+  margin-bottom: var(--space-6);
+}
+
+.program-group__title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-3);
+}
+
+.program-manager {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  max-width: 420px;
+}
+
+.program-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.program-row,
+.program-add {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.program-row__name,
+.program-add .form-input {
+  flex: 1;
 }
 
 /* Routine detail: the ordered slots. */
@@ -238,8 +278,13 @@
 
 /* ---- Logging (Today) -------------------------------------------------- */
 
-/* Start-a-workout cards reuse the library card but are <button>s. */
+/* Start-a-workout cards reuse the library card but are <button>s. Buttons center
+   their contents by default, so a short card floats its text to the middle while
+   the grid stretches both to equal height — force a top-aligned column instead. */
 .start-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
   text-align: left;
   cursor: pointer;
   font: inherit;
@@ -843,4 +888,158 @@
   align-items: flex-end;
   gap: 2px;
   white-space: nowrap;
+}
+
+/* --- Nutrition ---------------------------------------------------------- */
+
+/* Quick-log: a compact textarea with the submit button tucked at the end. */
+.meal-log {
+  gap: var(--space-2);
+}
+
+.meal-log__input {
+  resize: vertical;
+}
+
+.meal-log__submit {
+  align-self: flex-end;
+}
+
+/* The meal log: full-width tap-target rows, status dot + text + calories. */
+.meal-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.meal-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  text-decoration: none;
+  color: inherit;
+}
+
+.meal-row:hover {
+  box-shadow: var(--shadow-2);
+}
+
+.meal-row__main {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.meal-row__text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.meal-row__cals {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+}
+
+/* A pending/failed parse: a hollow amber dot, and a red one for failures. */
+.status-dot--bad {
+  background-color: var(--color-destructive-fg);
+  border-color: var(--color-destructive-fg);
+}
+
+/* Detail view. */
+.meal-detail__text {
+  overflow-wrap: anywhere;
+}
+
+.meal-editor {
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.item-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.item-row {
+  padding: var(--space-3) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.item-row__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.item-row__name {
+  font-weight: 600;
+}
+
+.item-row__macros {
+  font-variant-numeric: tabular-nums;
+}
+
+.item-row__note {
+  margin: 0;
+}
+
+.item-row__actions {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+/* Inline item editor: name/unit fields, then a rescale row + delete. */
+.item-editor {
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.item-editor__rescale {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-2);
+}
+
+.item-editor__rescale .form-group {
+  flex: 1;
+}
+
+/* Add-item form. */
+.add-item {
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.add-item__name {
+  flex: 2;
+}
+
+.add-item__amount,
+.add-item__unit {
+  flex: 1;
+}
+
+.add-item-toggle {
+  align-self: flex-start;
 }

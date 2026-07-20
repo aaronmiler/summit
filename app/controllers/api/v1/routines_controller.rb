@@ -7,8 +7,7 @@ module Api
     # even after a swap, and removing a logged slot only nullifies the breadcrumb.
     class RoutinesController < BaseController
       def index
-        render json: Routine.order(:name)
-          .as_json(only: %i[id name notes tags preferred_frequency])
+        render json: Routine.includes(:program).order(:name).map { |r| routine_summary_json(r) }
       end
 
       def show
@@ -42,13 +41,14 @@ module Api
 
       def load_routine(id)
         Routine.includes(
+          :program,
           routine_exercises: [ :exercise, { progression: { progression_phases: :exercise } } ]
         ).find(id)
       end
 
       def routine_params
         params.permit(
-          :name, :notes, :preferred_frequency, tags: [],
+          :name, :notes, :preferred_frequency, :program_id, tags: [],
           routine_exercises_attributes: %i[
             id exercise_id progression_id position target rest_seconds
             notes progression_note _destroy
@@ -56,9 +56,15 @@ module Api
         )
       end
 
-      def routine_detail_json(routine)
+      # The library-list shape: routine metadata + its program (id + name), no slots.
+      def routine_summary_json(routine)
         routine
           .as_json(only: %i[id name notes tags preferred_frequency])
+          .merge("program" => routine.program&.as_json(only: %i[id name]))
+      end
+
+      def routine_detail_json(routine)
+        routine_summary_json(routine)
           .merge("routine_exercises" => routine.routine_exercises.map { |re| slot_json(re) })
       end
 

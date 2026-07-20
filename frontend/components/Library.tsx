@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useRoutines } from '~/api/queries'
+import ProgramManager from './ProgramManager'
 
 // Library landing: browse the shared routines. Each card opens the routine's
 // slots; a link drops into the full exercise list. Read-only for now — editing
@@ -21,6 +22,11 @@ export default function Library() {
         </div>
       </div>
 
+      <div className="library-section mb-6">
+        <h2 className="program-group__title">Programs</h2>
+        <ProgramManager />
+      </div>
+
       {isLoading ? (
         <p className="text-muted">Loading…</p>
       ) : routines?.length ? (
@@ -33,10 +39,13 @@ export default function Library() {
             >
               <h2 className="card-title text-green">{routine.name}</h2>
               {routine.notes && <p className="card-body">{routine.notes}</p>}
-              {(routine.preferredFrequency || routine.tags.length > 0) && (
+              {(routine.program || routine.preferredFrequency || routine.tags.length > 0) && (
                 <div className="badge-row">
+                  {routine.program && (
+                    <span className="badge badge--accent">{routine.program.name}</span>
+                  )}
                   {routine.preferredFrequency && (
-                    <span className="badge badge--accent">{routine.preferredFrequency}</span>
+                    <span className="badge badge--neutral">{routine.preferredFrequency}</span>
                   )}
                   {routine.tags.map((tag) => (
                     <span key={tag} className="badge badge--neutral">

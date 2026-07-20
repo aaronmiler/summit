@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_19_120000) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_19_140000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -52,6 +52,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_19_120000) do
   end
 
   create_table "food_entries", force: :cascade do |t|
+    t.decimal "amount", precision: 6, scale: 2
     t.integer "calories"
     t.decimal "carbs", precision: 6, scale: 2
     t.decimal "confidence", precision: 3, scale: 2
@@ -61,6 +62,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_19_120000) do
     t.string "name"
     t.text "parse_notes"
     t.decimal "protein", precision: 6, scale: 2
+    t.string "unit"
     t.datetime "updated_at", null: false
     t.index ["meal_id"], name: "index_food_entries_on_meal_id"
   end
@@ -113,6 +115,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_19_120000) do
     t.index ["user_id"], name: "index_meals_on_user_id"
   end
 
+  create_table "programs", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "name", null: false
+    t.text "notes"
+    t.datetime "updated_at", null: false
+  end
+
   create_table "progression_phases", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.bigint "exercise_id", null: false
@@ -155,8 +164,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_19_120000) do
     t.string "name", null: false
     t.text "notes"
     t.string "preferred_frequency"
+    t.bigint "program_id"
     t.string "tags", default: [], null: false, array: true
     t.datetime "updated_at", null: false
+    t.index ["program_id"], name: "index_routines_on_program_id"
   end
 
   create_table "set_logs", force: :cascade do |t|
@@ -224,6 +235,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_19_120000) do
   add_foreign_key "routine_exercises", "exercises"
   add_foreign_key "routine_exercises", "progressions"
   add_foreign_key "routine_exercises", "routines"
+  add_foreign_key "routines", "programs", on_delete: :nullify
   add_foreign_key "set_logs", "exercises"
   add_foreign_key "set_logs", "progression_phases"
   add_foreign_key "set_logs", "routine_exercises", on_delete: :nullify

@@ -4,6 +4,7 @@ import {
   useRoutine,
   useExercises,
   useProgressions,
+  usePrograms,
   useCreateRoutine,
   useUpdateRoutine,
 } from '~/api/queries'
@@ -54,6 +55,8 @@ function Editor({ routine }: { routine?: RoutineDetail }) {
   const [notes, setNotes] = useState(routine?.notes ?? '')
   const [tags, setTags] = useState((routine?.tags ?? []).join(', '))
   const [frequency, setFrequency] = useState(routine?.preferredFrequency ?? '')
+  const [programId, setProgramId] = useState<number | null>(routine?.program?.id ?? null)
+  const { data: programs } = usePrograms()
   const [slots, setSlots] = useState<EditorSlot[]>(() =>
     (routine?.routineExercises ?? []).map(seedSlot),
   )
@@ -120,6 +123,7 @@ function Editor({ routine }: { routine?: RoutineDetail }) {
       notes: emptyToNull(notes),
       tags: tags.split(',').map((t) => t.trim()).filter(Boolean),
       preferredFrequency: emptyToNull(frequency),
+      programId,
       routineExercisesAttributes: [...kept, ...removed],
     }
 
@@ -152,6 +156,23 @@ function Editor({ routine }: { routine?: RoutineDetail }) {
           onChange={(e) => setName(e.target.value)}
           placeholder="Pull/Core"
         />
+      </div>
+
+      <div className="form-group">
+        <label className="form-label" htmlFor="routine-program">Program</label>
+        <select
+          id="routine-program"
+          className="form-input"
+          value={programId ?? ''}
+          onChange={(e) => setProgramId(e.target.value === '' ? null : Number(e.target.value))}
+        >
+          <option value="">— No program —</option>
+          {programs?.map((program) => (
+            <option key={program.id} value={program.id}>
+              {program.name}
+            </option>
+          ))}
+        </select>
       </div>
 
       <div className="form-row">

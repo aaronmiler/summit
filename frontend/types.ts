@@ -47,6 +47,21 @@ export type ExerciseInput = {
   muscleGroup: string | null
 }
 
+// A program: a named grouping of routines, backing the Today sections. The
+// list/CRUD shape carries notes; routines embed only the id+name summary.
+export type Program = {
+  id: number
+  name: string
+  notes: string | null
+}
+
+export type ProgramSummary = Pick<Program, 'id' | 'name'>
+
+export type ProgramInput = {
+  name: string
+  notes: string | null
+}
+
 // Routine as it comes back from the index (no slots).
 export type Routine = {
   id: number
@@ -54,6 +69,7 @@ export type Routine = {
   notes: string | null
   tags: string[]
   preferredFrequency: string | null
+  program: ProgramSummary | null
 }
 
 // One phase of a progression, as nested in a routine slot.
@@ -120,6 +136,7 @@ export type RoutineInput = {
   notes: string | null
   tags: string[]
   preferredFrequency: string | null
+  programId: number | null
   routineExercisesAttributes: SlotInput[]
 }
 
@@ -250,6 +267,53 @@ export type HealthImportSetup = {
   url: string
   headerKey: string
   headerValue: string
+}
+
+// --- Nutrition ----------------------------------------------------------
+
+// A meal is freeform text (the truth); its macros are derived asynchronously by
+// the LLM into FoodEntry rows. `parseStatus` reflects the latest parse
+// ('pending' until the job lands, then 'ok'/'error'/'parse_error').
+export type Meal = {
+  id: number
+  rawText: string
+  notes: string | null
+  eatenAt: string | null
+  createdAt: string
+  parseStatus: string
+  parsedAt: string | null
+  foodEntries: FoodEntry[]
+}
+
+// One estimated item within a meal. Macros are stored totals for `amount` ×
+// `unit`; the amount-rescale (POST /food_entries/:id/rescale) recomputes them in
+// code, and estimate (POST …/estimate) fills them from one LLM call.
+export type FoodEntry = {
+  id: number
+  name: string
+  amount: number | null
+  unit: string | null
+  calories: number | null
+  protein: number | null
+  carbs: number | null
+  fat: number | null
+  confidence: number | null
+  parseNotes: string | null
+}
+
+// Editable meal fields (PATCH /meals/:id). Changing rawText re-parses.
+export type MealInput = {
+  rawText?: string
+  notes?: string | null
+  eatenAt?: string | null
+}
+
+// A hand-added item's fields (POST /meals/:id/food_entries, PATCH …). Macros are
+// never typed — they come from estimate/rescale.
+export type FoodEntryInput = {
+  name?: string
+  amount?: number | null
+  unit?: string | null
 }
 
 // --- Integration monitoring ---------------------------------------------
