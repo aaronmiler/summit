@@ -28,9 +28,22 @@
   color: #fff;
 }
 
-/* Mobile: the top bar's desktop padding + 2rem gaps overflow a phone. Tighten
-   spacing and let the links wrap under the user chip if still tight. (This app
-   keeps a single top bar instead of Cascadia's bottom tab-bar.) */
+/* Desktop: links + user chip sit inline in the bar (nav-user's margin-left:auto
+   pushes it to the right edge). The hamburger only exists on mobile. */
+.nav-menu {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.nav-toggle {
+  display: none;
+}
+
+/* Mobile: the top bar can't hold the mark + 4 links + chip on one row, and the
+   bottom is reserved for the rest timer — so the links + switch-user collapse
+   into a right-side drawer behind a hamburger. */
 @media (max-width: 640px) {
   .nav-bar {
     padding: var(--space-3) var(--space-4);
@@ -43,9 +56,71 @@
     display: none;
   }
 
-  .nav-bar .nav-links {
-    flex-wrap: wrap;
-    gap: var(--space-3) var(--space-4);
+  /* Hamburger toggles the drawer; sits above the overlay so it stays tappable. */
+  .nav-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: auto;
+    padding: var(--space-1);
+    color: var(--nav-text);
+    background: none;
+    border: none;
+    cursor: pointer;
+    position: relative;
+    z-index: 1600;
+  }
+
+  /* nav-menu becomes an off-canvas right drawer. */
+  .nav-menu {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: min(78vw, 320px);
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-4);
+    padding: var(--space-6) var(--space-5);
+    background-color: var(--nav-bg);
+    box-shadow: var(--shadow-2);
+    transform: translateX(100%);
+    transition: transform var(--duration-fast) var(--ease);
+    z-index: 1500;
+    overflow-y: auto;
+  }
+
+  .nav-menu--open {
+    transform: translateX(0);
+  }
+
+  .nav-menu .nav-links {
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .nav-menu .nav-links a {
+    display: block;
+    padding: var(--space-3) 0;
+    font-size: 1rem;
+  }
+
+  /* Switch-user pinned to the bottom of the drawer, under a divider. */
+  .nav-menu .nav-user {
+    margin-left: 0;
+    margin-top: auto;
+    padding-top: var(--space-4);
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+    justify-content: flex-start;
+    text-align: left;
+  }
+
+  /* Scrim behind the drawer; tap to close. */
+  .nav-overlay {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.45);
+    z-index: 1400;
   }
 }
 
