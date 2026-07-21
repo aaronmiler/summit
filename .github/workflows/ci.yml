@@ -63,6 +63,21 @@ jobs:
         with:
           bundler-cache: true
 
+      # The SPA-shell request specs (pages_spec) render the real layout, which
+      # references the Vite build's digest-stamped assets — so the test build
+      # must exist. Set up Node and build the test manifest before rspec.
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: yarn
+
+      - name: Install JS dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Build frontend (test manifest)
+        run: bin/vite build --mode=test
+
       - name: Run tests
         env:
           RAILS_ENV: test
