@@ -1,6 +1,20 @@
 /* Summit-specific styles, layered on top of Cascadia (imported first).
    Keep this thin — reach for a Cascadia class before adding here. */
 
+/* Brand lockup in the nav: gold mark + wordmark. inline-flex keeps them
+   baseline-aligned with a small gap. */
+.app-name {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.app-logo {
+  height: 1.8rem;
+  width: auto;
+  display: block;
+}
+
 /* The current-user chip in the nav; doubles as the "switch user" control.
    Cascadia's ghost button is green-on-transparent (invisible on the green
    nav), so recolor it for the nav surface. */
@@ -21,6 +35,12 @@
   .nav-bar {
     padding: var(--space-3) var(--space-4);
     gap: var(--space-3);
+  }
+
+  /* Drop the wordmark on phones to save space, but keep the mark as a compact
+     brand anchor + home tap-target. */
+  .nav-bar .app-name__text {
+    display: none;
   }
 
   .nav-bar .nav-links {

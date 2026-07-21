@@ -4,7 +4,8 @@ import type { User } from '~/types'
 import { useSwitchUser } from '~/api/queries'
 import UpdateBanner from './UpdateBanner'
 
-// Cascadia nav shell: sticky green bar with active-link underline. The
+// Cascadia nav shell: sticky green bar, gold Summit mark + wordmark (wordmark
+// hidden on mobile, mark stays as the brand anchor), active-link underline. The
 // current-user chip on the right switches user (back to picker).
 export default function Layout({ user, children }: { user: User; children: ReactNode }) {
   const switchUser = useSwitchUser()
@@ -12,6 +13,10 @@ export default function Layout({ user, children }: { user: User; children: React
   return (
     <>
       <nav className="nav-bar">
+        <NavLink to="/" className="app-name">
+          <img src="/mark.png" alt="" className="app-logo" />
+          <span className="app-name__text">Summit</span>
+        </NavLink>
         <ul className="nav-links">
           <li>
             <NavLink to="/" end>
