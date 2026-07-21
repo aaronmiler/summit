@@ -2,7 +2,15 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useMeals, useLogMeal } from '~/api/queries'
 import type { Meal } from '~/types'
-import { mealCalories, parseStatusLabel } from './mealMath'
+import {
+  mealCalories,
+  mealType,
+  parseStatusLabel,
+  groupMealsByDay,
+  dayLabel,
+  derivedMealTypeFor,
+} from './mealMath'
+import MealTypeChips from './MealTypeChips'
 
 // The Nutrition tab: log a meal as freeform text (parsed into macros in the
 // background), and browse the log. Tapping a meal opens its detail/editor.
@@ -11,16 +19,23 @@ export default function Nutrition() {
   const { data: meals, isLoading } = useMeals()
   const log = useLogMeal()
   const [text, setText] = useState('')
+  // null = auto (derive from the log time); a value = explicit override.
+  const [typeOverride, setTypeOverride] = useState<string | null>(null)
+  const autoType = derivedMealTypeFor(new Date())
 
   function handleLog() {
     const raw = text.trim()
     if (raw === '') return
-    log.mutate(raw, {
-      onSuccess: (meal) => {
-        setText('')
-        navigate(`/nutrition/${meal.id}`)
+    log.mutate(
+      { rawText: raw, mealType: typeOverride },
+      {
+        onSuccess: (meal) => {
+          setText('')
+          setTypeOverride(null)
+          navigate(`/nutrition/${meal.id}`)
+        },
       },
-    })
+    )
   }
 
   return (
@@ -37,8 +52,21 @@ export default function Nutrition() {
           rows={2}
           value={text}
           onChange={(e) => setText(e.target.value)}
+          onKeyDown={(e) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') handleLog()
+          }}
           placeholder="2 eggs, sausage, toast"
         />
+        <div className="meal-log__type">
+          <span className="form-label">
+            Type {typeOverride == null && <span className="text-muted">· auto</span>}
+          </span>
+          <MealTypeChips
+            selected={typeOverride ?? autoType}
+            isAuto={typeOverride == null}
+            onSelect={setTypeOverride}
+          />
+        </div>
         <button
           className="btn btn--primary meal-log__submit"
           disabled={text.trim() === '' || log.isPending}
@@ -51,11 +79,24 @@ export default function Nutrition() {
       {isLoading ? (
         <p className="text-muted">Loading…</p>
       ) : meals && meals.length > 0 ? (
-        <ul className="meal-list mt-6">
-          {meals.map((meal) => (
-            <MealRow key={meal.id} meal={meal} />
+        <div className="meal-timeline mt-6">
+          {groupMealsByDay(meals).map((day) => (
+            <section key={day.key} className="meal-day">
+              <header className="meal-day__header">
+                <span className="meal-day__date text-green">{dayLabel(day.date)}</span>
+                <span className="meal-day__totals caption text-driftwood">
+                  {Math.round(day.totals.calories)} cal · {Math.round(day.totals.protein)}p /{' '}
+                  {Math.round(day.totals.carbs)}c / {Math.round(day.totals.fat)}f
+                </span>
+              </header>
+              <ul className="meal-list">
+                {day.meals.map((meal) => (
+                  <MealRow key={meal.id} meal={meal} />
+                ))}
+              </ul>
+            </section>
           ))}
-        </ul>
+        </div>
       ) : (
         <p className="text-muted mt-6">No meals logged yet.</p>
       )}
@@ -74,9 +115,12 @@ function MealRow({ meal }: { meal: Meal }) {
           <span className={`status-dot ${status.dotClass}`} />
           <span className="meal-row__text">{meal.rawText}</span>
         </div>
-        <span className="meal-row__cals caption text-muted">
-          {cals != null ? `${cals} cal` : status.label}
-        </span>
+        <div className="meal-row__meta">
+          <span className="badge badge--neutral meal-row__type">{mealType(meal)}</span>
+          <span className="meal-row__cals caption text-muted">
+            {cals != null ? `${cals} cal` : status.label}
+          </span>
+        </div>
       </Link>
     </li>
   )

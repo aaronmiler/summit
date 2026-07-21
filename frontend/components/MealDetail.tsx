@@ -11,7 +11,8 @@ import {
   useEstimateFoodEntry,
 } from '~/api/queries'
 import type { Meal, FoodEntry } from '~/types'
-import { mealCalories, mealMacros, hasMacros, parseStatusLabel, toNum } from './mealMath'
+import { mealCalories, mealMacros, hasMacros, mealType, parseStatusLabel, toNum } from './mealMath'
+import MealTypeChips from './MealTypeChips'
 
 // One meal's detail + editor. The text is the truth (editing it re-parses); the
 // items are derived and hand-correctable — the human owns name/portion/unit, the
@@ -48,7 +49,7 @@ export default function MealDetail() {
         </div>
       )}
 
-      <div className="badge-row mt-2 mb-6">
+      <div className="badge-row mt-2 mb-3">
         <span className="caption text-muted">
           <span className={`status-dot ${status.dotClass}`} /> {status.label}
         </span>
@@ -59,6 +60,8 @@ export default function MealDetail() {
           </span>
         )}
       </div>
+
+      <MealTypeRetag meal={meal} />
 
       <ul className="item-list">
         {meal.foodEntries.map((entry) => (
@@ -85,6 +88,25 @@ function ReparseButton({ meal }: { meal: Meal }) {
     >
       {reparse.isPending ? 'Retrying…' : 'Re-parse'}
     </button>
+  )
+}
+
+// One-tap re-tag: fixes the meal-type when you logged late (or early) without
+// entering edit mode. null override = auto (derived from the time).
+function MealTypeRetag({ meal }: { meal: Meal }) {
+  const update = useUpdateMeal(meal.id)
+  return (
+    <div className="meal-retag mb-6">
+      <span className="form-label">
+        Type {meal.mealType == null && <span className="text-muted">· auto</span>}
+      </span>
+      <MealTypeChips
+        selected={mealType(meal)}
+        isAuto={meal.mealType == null}
+        disabled={update.isPending}
+        onSelect={(type) => update.mutate({ mealType: type })}
+      />
+    </div>
   )
 }
 

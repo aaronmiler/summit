@@ -21,7 +21,10 @@ module Summit
     # These settings can be overridden in specific environments using the files
     # in config/environments, which are processed later.
     #
-    # config.time_zone = "Central Time (US & Canada)"
+    # PNW app for 2 users — anchor everything to Pacific. Timestamps still store
+    # as UTC (default_timezone :utc); this governs how naive input (the meal
+    # editor's datetime-local wall-clock) is interpreted and how times render.
+    config.time_zone = "Pacific Time (US & Canada)"
     # config.eager_load_paths << Rails.root.join("extras")
 
     # Only loads a smaller set of middleware suitable for API only apps.

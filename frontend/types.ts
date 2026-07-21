@@ -279,6 +279,8 @@ export type Meal = {
   rawText: string
   notes: string | null
   eatenAt: string | null
+  // Human override for the meal-type chip; null = auto (derived from the time).
+  mealType: string | null
   createdAt: string
   parseStatus: string
   parsedAt: string | null
@@ -306,6 +308,7 @@ export type MealInput = {
   rawText?: string
   notes?: string | null
   eatenAt?: string | null
+  mealType?: string | null
 }
 
 // A hand-added item's fields (POST /meals/:id/food_entries, PATCH …). Macros are

@@ -358,7 +358,8 @@ export function useMeal(id: string | undefined) {
 export function useLogMeal() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (rawText: string) => apiV1Meals.create<Meal>({ data: { rawText } }),
+    mutationFn: (input: { rawText: string; mealType?: string | null }) =>
+      apiV1Meals.create<Meal>({ data: input }),
     onSuccess: (meal) => {
       queryClient.invalidateQueries({ queryKey: ['meals'] })
       queryClient.setQueryData(['meals', String(meal.id)], meal)

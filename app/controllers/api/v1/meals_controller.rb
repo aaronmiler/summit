@@ -56,11 +56,11 @@ module Api
       end
 
       def meal_params
-        params.permit(:raw_text, :notes, :eaten_at)
+        params.permit(:raw_text, :notes, :eaten_at, :meal_type)
       end
 
       def meal_json(meal)
-        meal.as_json(only: %i[id raw_text notes eaten_at created_at]).merge(
+        meal.as_json(only: %i[id raw_text notes eaten_at meal_type created_at]).merge(
           "parse_status" => meal.parse_status,
           "parsed_at" => meal.parsed_at,
           "food_entries" => meal.food_entries.map(&:as_entry_json)

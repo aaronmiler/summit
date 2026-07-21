@@ -14,6 +14,21 @@
   color: #fff;
 }
 
+/* Mobile: the top bar's desktop padding + 2rem gaps overflow a phone. Tighten
+   spacing and let the links wrap under the user chip if still tight. (This app
+   keeps a single top bar instead of Cascadia's bottom tab-bar.) */
+@media (max-width: 640px) {
+  .nav-bar {
+    padding: var(--space-3) var(--space-4);
+    gap: var(--space-3);
+  }
+
+  .nav-bar .nav-links {
+    flex-wrap: wrap;
+    gap: var(--space-3) var(--space-4);
+  }
+}
+
 /* The "which of the 2 are you" picker — full-screen, centered. */
 .picker {
   min-height: 100vh;
@@ -903,6 +918,61 @@
 
 .meal-log__submit {
   align-self: flex-end;
+  margin-top: var(--space-2);
+}
+
+/* Meal-type chips: on the log form (pre-set to the auto value) and inline on the
+   meal detail for a one-tap re-tag. */
+.meal-log__type,
+.meal-retag {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.meal-type-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* A badge rendered as a button — reset the native chrome, keep it tappable. */
+.meal-type-chip {
+  border: none;
+  cursor: pointer;
+  font: inherit;
+}
+
+.meal-type-chip:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* The timeline: meals grouped into day sections, newest day first. */
+.meal-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+/* A day's header: the date label with that day's rolled-up cal + macro totals. */
+.meal-day__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-bottom: var(--space-2);
+  margin-bottom: var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.meal-day__date {
+  font-weight: 600;
+}
+
+.meal-day__totals {
+  flex: none;
+  font-variant-numeric: tabular-nums;
 }
 
 /* The meal log: full-width tap-target rows, status dot + text + calories. */
@@ -911,6 +981,14 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+}
+
+/* Right side of a meal row: derived meal-type chip + calories. */
+.meal-row__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex: none;
 }
 
 .meal-row {

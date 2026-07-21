@@ -1,8 +1,13 @@
 class Meal < ApplicationRecord
+  # Optional override for the derived meal-type chip; nil = auto (derive from the
+  # meal's time, see frontend mealMath). Stored only when tapped to re-tag.
+  MEAL_TYPES = %w[Breakfast Lunch Dinner Snack].freeze
+
   belongs_to :user
   has_many :food_entries, dependent: :destroy
 
   validates :raw_text, presence: true
+  validates :meal_type, inclusion: { in: MEAL_TYPES }, allow_nil: true
 
   # Parse status is derived, not stored — it's the status of this meal's most
   # recent nutrition-parse IntegrationEvent (see MealParser). "pending" means
