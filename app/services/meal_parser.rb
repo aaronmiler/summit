@@ -31,7 +31,7 @@ class MealParser < ApplicationService
       return []
     end
 
-    entries = replace_entries(items)
+    entries = replace_entries(items, extract_summary(parsed))
     record(status: IntegrationEvent::OK, summary: "#{entries.size} item(s)",
            duration_ms: duration_ms, metadata: { item_count: entries.size })
     entries
@@ -42,12 +42,21 @@ class MealParser < ApplicationService
 
   private
 
-  # Swap the meal's derived entries atomically — old ones go, new ones land.
-  def replace_entries(items)
+  # Swap the meal's derived entries atomically — old ones go, new ones land. The
+  # summary is a parse artifact too, so it's refreshed in the same transaction.
+  def replace_entries(items, summary)
     @meal.transaction do
+      @meal.update!(summary: summary)
       @meal.food_entries.destroy_all
       items.map { |attrs| @meal.food_entries.create!(attrs) }
     end
+  end
+
+  # The whole-meal title the model returned (nil when absent or non-food).
+  def extract_summary(parsed)
+    return nil unless parsed.is_a?(Hash)
+
+    parsed["summary"].to_s.strip.presence&.slice(0, 80)
   end
 
   # Coerce the model's parsed JSON into FoodEntry attribute hashes. Accepts the

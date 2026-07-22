@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_20_120000) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_22_020753) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -111,6 +111,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_20_120000) do
     t.string "meal_type"
     t.text "notes"
     t.text "raw_text", null: false
+    t.string "summary"
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
     t.index ["user_id"], name: "index_meals_on_user_id"

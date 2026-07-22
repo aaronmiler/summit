@@ -277,6 +277,8 @@ export type HealthImportSetup = {
 export type Meal = {
   id: number
   rawText: string
+  // Short LLM-generated dish title from the parse; null until parsed / non-food.
+  summary: string | null
   notes: string | null
   eatenAt: string | null
   // Human override for the meal-type chip; null = auto (derived from the time).

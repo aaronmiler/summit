@@ -19,6 +19,31 @@ RSpec.describe MealParser do
     )
   end
 
+  it "stores the summary title from the parse" do
+    stub_llm('{"summary":"Eggs & toast","items":[{"name":"eggs","amount":2,"unit":"egg","calories":140}]}')
+
+    MealParser.call(meal)
+
+    expect(meal.reload.summary).to eq("Eggs & toast")
+  end
+
+  it "leaves summary nil for non-food text" do
+    stub_llm('{"summary":"","items":[]}')
+
+    MealParser.call(meal)
+
+    expect(meal.reload.summary).to be_nil
+  end
+
+  it "refreshes the summary on re-parse" do
+    meal.update!(summary: "Old title")
+    stub_llm('{"summary":"New title","items":[{"name":"x","amount":1,"unit":"serving","calories":10}]}')
+
+    MealParser.call(meal)
+
+    expect(meal.reload.summary).to eq("New title")
+  end
+
   it "rounds fractional calories to the integer column and tolerates unit strays" do
     stub_llm('{"items":[{"name":"toast","amount":1,"unit":"slice","calories":80.6,"protein":"3g","carbs":14,"fat":1}]}')
 

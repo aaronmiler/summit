@@ -11,12 +11,13 @@
 module NutritionPrompt
   SCHEMA = <<~S.strip
     Return ONLY a JSON object of exactly this shape, nothing else:
-    {"items":[{"name":"string","amount":number,"unit":"string","calories":number,"protein":number,"carbs":number,"fat":number,"confidence":number,"parse_notes":"string"}]}
+    {"summary":"string","items":[{"name":"string","amount":number,"unit":"string","calories":number,"protein":number,"carbs":number,"fat":number,"confidence":number,"parse_notes":"string"}]}
+    - summary is a SHORT title for the whole meal, 2-5 words, no trailing punctuation (e.g. "Eggs, sausage & toast", "Turkey club"). Empty string if no food.
     - amount + unit are the PORTION you assumed: amount is a number, unit is a short word (e.g. 2 "slice", 300 "g", 1 "cup", 4 "oz", 1 "serving").
     - calories/protein/carbs/fat are the TOTAL for that portion (protein/carbs/fat in GRAMS, calories in kcal; numbers only).
     - confidence is 0.0-1.0: how sure you are of that item's macros.
     - parse_notes: any other assumption, under 12 words.
-    - If the text names no food or drink, return {"items":[]}.
+    - If the text names no food or drink, return {"summary":"","items":[]}.
   S
 
   SYSTEM = <<~P.strip
@@ -27,7 +28,8 @@ module NutritionPrompt
     4. For named brands/restaurant items, use their known values.
     5. Set confidence lower (<=0.5) when the portion or item is vague.
     6. Put any other assumption in parse_notes.
-    7. If the text names no food or drink, output {"items":[]}.
+    7. Write a short 2-5 word summary title for the whole meal.
+    8. If the text names no food or drink, output {"summary":"","items":[]}.
     #{SCHEMA}
     Output JSON only. No prose, no markdown fences.
   P
@@ -36,11 +38,11 @@ module NutritionPrompt
   # (anti-flatten), and empty-on-non-food.
   FEWSHOT = [
     { role: "user", content: "2 slices of whole wheat toast with peanut butter" },
-    { role: "assistant", content: '{"items":[{"name":"whole wheat toast","amount":2,"unit":"slice","calories":140,"protein":6,"carbs":24,"fat":2,"confidence":0.8,"parse_notes":"standard slices"},{"name":"peanut butter","amount":2,"unit":"tbsp","calories":190,"protein":8,"carbs":6,"fat":16,"confidence":0.6,"parse_notes":"assumed 2 tbsp"}]}' },
+    { role: "assistant", content: '{"summary":"Toast & peanut butter","items":[{"name":"whole wheat toast","amount":2,"unit":"slice","calories":140,"protein":6,"carbs":24,"fat":2,"confidence":0.8,"parse_notes":"standard slices"},{"name":"peanut butter","amount":2,"unit":"tbsp","calories":190,"protein":8,"carbs":6,"fat":16,"confidence":0.6,"parse_notes":"assumed 2 tbsp"}]}' },
     { role: "user", content: "turkey club: 3 slices bread, turkey, bacon, lettuce, tomato, mayo" },
-    { role: "assistant", content: '{"items":[{"name":"bread","amount":3,"unit":"slice","calories":210,"protein":9,"carbs":39,"fat":3,"confidence":0.7,"parse_notes":"3 sandwich slices"},{"name":"turkey","amount":4,"unit":"oz","calories":150,"protein":30,"carbs":1,"fat":3,"confidence":0.6,"parse_notes":"deli turkey"},{"name":"bacon","amount":3,"unit":"strip","calories":130,"protein":9,"carbs":0,"fat":10,"confidence":0.7,"parse_notes":"3 strips"},{"name":"mayo","amount":1,"unit":"tbsp","calories":90,"protein":0,"carbs":0,"fat":10,"confidence":0.6,"parse_notes":"assumed 1 tbsp"},{"name":"lettuce & tomato","amount":1,"unit":"serving","calories":15,"protein":1,"carbs":3,"fat":0,"confidence":0.7,"parse_notes":"garnish"}]}' },
+    { role: "assistant", content: '{"summary":"Turkey club","items":[{"name":"bread","amount":3,"unit":"slice","calories":210,"protein":9,"carbs":39,"fat":3,"confidence":0.7,"parse_notes":"3 sandwich slices"},{"name":"turkey","amount":4,"unit":"oz","calories":150,"protein":30,"carbs":1,"fat":3,"confidence":0.6,"parse_notes":"deli turkey"},{"name":"bacon","amount":3,"unit":"strip","calories":130,"protein":9,"carbs":0,"fat":10,"confidence":0.7,"parse_notes":"3 strips"},{"name":"mayo","amount":1,"unit":"tbsp","calories":90,"protein":0,"carbs":0,"fat":10,"confidence":0.6,"parse_notes":"assumed 1 tbsp"},{"name":"lettuce & tomato","amount":1,"unit":"serving","calories":15,"protein":1,"carbs":3,"fat":0,"confidence":0.7,"parse_notes":"garnish"}]}' },
     { role: "user", content: "took the dog for a walk" },
-    { role: "assistant", content: '{"items":[]}' }
+    { role: "assistant", content: '{"summary":"","items":[]}' }
   ].freeze
 
   # Full message list for one totals-mode parse of `raw_text`.
@@ -64,9 +66,14 @@ module NutritionPrompt
     Output JSON only. No prose, no markdown fences.
   P
 
-  def self.item_messages(name, amount, unit)
+  # `known_calories`: when the user has measured the calorie total, pass it so the
+  # model fills protein/carbs/fat consistent with it (the caller keeps the calories).
+  def self.item_messages(name, amount, unit, known_calories: nil)
     portion = [ amount, unit ].compact.join(" ").strip
     user = portion.empty? ? name.to_s : "#{name} (#{portion})"
+    if known_calories
+      user += ". Calorie total is known: #{known_calories.to_i} kcal — estimate protein, carbs, and fat consistent with that total."
+    end
     [ { role: "system", content: ITEM_SYSTEM }, { role: "user", content: user } ]
   end
 end

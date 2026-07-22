@@ -431,11 +431,16 @@ export function useRescaleFoodEntry() {
   })
 }
 
-// Fill an item's macros with one (synchronous) LLM call.
+// Fill an item's macros with one (synchronous) LLM call. Pass a bare id for a
+// full estimate, or { id, calories } to pin a measured calorie total (the LLM
+// fills only the macro split).
 export function useEstimateFoodEntry() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (id: number) => apiV1FoodEntries.estimate<FoodEntry>({ id }),
+    mutationFn: (arg: number | { id: number; calories: number }) =>
+      typeof arg === 'number'
+        ? apiV1FoodEntries.estimate<FoodEntry>({ id: arg })
+        : apiV1FoodEntries.estimate<FoodEntry>({ data: { id: arg.id, calories: arg.calories } }),
     onSuccess: () => invalidateMeals(queryClient),
   })
 }

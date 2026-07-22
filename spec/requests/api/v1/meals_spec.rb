@@ -78,7 +78,7 @@ RSpec.describe "Api::V1::Meals", type: :request do
   describe "GET /api/v1/meals/:id" do
     it "returns the meal, its entries, and a derived parse status" do
       sign_in(aaron)
-      meal = create(:meal, user: aaron, raw_text: "pizza")
+      meal = create(:meal, user: aaron, raw_text: "pizza", summary: "Cheese pizza")
       create(:food_entry, meal:, name: "cheese pizza", amount: 3, unit: "slice", calories: 840)
       create(:integration_event, kind: "llm.nutrition_parse", user: aaron, status: "ok",
                                   metadata: { "meal_id" => meal.id })
@@ -87,7 +87,7 @@ RSpec.describe "Api::V1::Meals", type: :request do
 
       expect(response).to have_http_status(:ok)
       body = response.parsed_body
-      expect(body).to include("parse_status" => "ok")
+      expect(body).to include("parse_status" => "ok", "summary" => "Cheese pizza")
       expect(body["food_entries"].first).to include("name" => "cheese pizza", "amount" => "3.0", "unit" => "slice")
     end
   end

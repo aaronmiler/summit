@@ -113,7 +113,10 @@ function MealRow({ meal }: { meal: Meal }) {
       <Link to={`/nutrition/${meal.id}`} className="meal-row card card--surface">
         <div className="meal-row__main">
           <span className={`status-dot ${status.dotClass}`} />
-          <span className="meal-row__text">{meal.rawText}</span>
+          <span className="meal-row__lines">
+            <span className="meal-row__text">{meal.summary || meal.rawText}</span>
+            {meal.summary && <span className="meal-row__raw caption text-muted">{meal.rawText}</span>}
+          </span>
         </div>
         <div className="meal-row__meta">
           <span className="badge badge--neutral meal-row__type">{mealType(meal)}</span>

@@ -11,8 +11,11 @@ class FoodEntryEstimator < ApplicationService
 
   def self.model = MealParser.model
 
-  def initialize(entry)
+  # `known_calories`: the human's measured calorie total. When given, the model fills
+  # only the macro split and we keep this number instead of the model's calories.
+  def initialize(entry, known_calories: nil)
     @entry = entry
+    @known_calories = known_calories
   end
 
   # Returns the updated entry (macros filled), or the entry untouched on a parse
@@ -20,7 +23,8 @@ class FoodEntryEstimator < ApplicationService
   def call
     t0 = Time.now
     content = LitellmClient.chat(
-      NutritionPrompt.item_messages(@entry.name, @entry.amount, @entry.unit), model: self.class.model
+      NutritionPrompt.item_messages(@entry.name, @entry.amount, @entry.unit, known_calories: @known_calories),
+      model: self.class.model
     )
     duration_ms = ((Time.now - t0) * 1000).round
 
@@ -32,7 +36,7 @@ class FoodEntryEstimator < ApplicationService
     end
 
     @entry.update!(
-      calories: num(macros["calories"])&.round,
+      calories: @known_calories&.round || num(macros["calories"])&.round,
       protein: num(macros["protein"]),
       carbs: num(macros["carbs"]),
       fat: num(macros["fat"]),

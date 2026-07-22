@@ -20,6 +20,15 @@ RSpec.describe FoodEntryEstimator do
     )
   end
 
+  it "pins a known calorie total and fills only the macro split" do
+    # The model still returns a calorie number; the human's measured total wins.
+    stub_llm('{"calories":999,"protein":10,"carbs":20,"fat":5,"confidence":0.7}')
+
+    FoodEntryEstimator.call(entry, known_calories: 240)
+
+    expect(entry.reload).to have_attributes(calories: 240, protein: 10, carbs: 20, fat: 5)
+  end
+
   it "logs a success IntegrationEvent tagged with the entry" do
     stub_llm('{"calories":120,"protein":3,"carbs":10,"fat":8}')
 

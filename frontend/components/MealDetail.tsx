@@ -39,7 +39,12 @@ export default function MealDetail() {
         <MealEditor meal={meal} onClose={() => setEditing(false)} />
       ) : (
         <div className="detail-header mt-4">
-          <h1 className="page-heading text-green meal-detail__text">{meal.rawText}</h1>
+          <div className="meal-detail__title">
+            <h1 className="page-heading text-green meal-detail__text">
+              {meal.summary || meal.rawText}
+            </h1>
+            {meal.summary && <p className="caption text-muted meal-detail__raw">{meal.rawText}</p>}
+          </div>
           <div className="detail-header__actions">
             <button className="btn btn--secondary btn--compact" onClick={() => setEditing(true)}>
               Edit
@@ -235,10 +240,13 @@ function ItemEditor({ entry, onClose }: { entry: FoodEntry; onClose: () => void 
   const updateEntry = useUpdateFoodEntry()
   const rescale = useRescaleFoodEntry()
   const del = useDeleteFoodEntry()
+  const estimate = useEstimateFoodEntry()
 
   const [name, setName] = useState(entry.name)
   const [unit, setUnit] = useState(entry.unit ?? '')
   const [amount, setAmount] = useState(String(toNum(entry.amount) ?? ''))
+  // Empty = don't pin; a value = "I measured this, fill the macros to match".
+  const [knownCals, setKnownCals] = useState('')
 
   function handleSaveFields() {
     updateEntry.mutate({ id: entry.id, name: name.trim(), unit: unit.trim() || null })
@@ -248,6 +256,12 @@ function ItemEditor({ entry, onClose }: { entry: FoodEntry; onClose: () => void 
     const next = toNum(amount)
     if (next == null || next <= 0) return
     rescale.mutate({ id: entry.id, amount: next })
+  }
+
+  function handleFillMacros() {
+    const cals = toNum(knownCals)
+    if (cals == null || cals <= 0) return
+    estimate.mutate({ id: entry.id, calories: cals }, { onSuccess: onClose })
   }
 
   function handleDelete() {
@@ -316,6 +330,35 @@ function ItemEditor({ entry, onClose }: { entry: FoodEntry; onClose: () => void 
           Delete
         </button>
       </div>
+
+      <div className="item-editor__rescale">
+        <div className="form-group">
+          <label className="form-label" htmlFor={`cals-${entry.id}`}>
+            Known calories
+          </label>
+          <input
+            id={`cals-${entry.id}`}
+            className="form-input"
+            type="number"
+            inputMode="numeric"
+            step="any"
+            value={knownCals}
+            onChange={(e) => setKnownCals(e.target.value)}
+            placeholder="e.g. 240"
+          />
+        </div>
+        <button
+          className="btn btn--secondary btn--compact"
+          disabled={estimate.isPending || toNum(knownCals) == null}
+          onClick={handleFillMacros}
+          title="Pin this calorie total; the LLM fills the macros to match"
+        >
+          {estimate.isPending ? 'Filling…' : 'Fill macros'}
+        </button>
+      </div>
+      <p className="body-small text-muted item-editor__hint">
+        Measured a serving? Pin the calories and the estimate fills protein/carbs/fat to match.
+      </p>
     </div>
   )
 }

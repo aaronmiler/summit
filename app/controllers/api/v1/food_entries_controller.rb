@@ -47,8 +47,11 @@ module Api
 
       # POST /api/v1/food_entries/:id/estimate — fill this item's macros with one
       # LLM call. Synchronous (foreground action, unlike the async meal parse).
+      # Optional `calories`: a measured total to pin — the model fills only the
+      # macro split and the human's calorie number is kept.
       def estimate
-        entry = FoodEntryEstimator.call(find_entry)
+        known = params[:calories].presence&.to_f
+        entry = FoodEntryEstimator.call(find_entry, known_calories: known)
         render json: entry.as_entry_json
       rescue LitellmClient::Error => e
         render json: { error: e.message }, status: :bad_gateway
