@@ -56,7 +56,7 @@ module Api
       end
 
       def meal_params
-        params.permit(:raw_text, :notes, :eaten_at, :meal_type)
+        params.permit(:raw_text, :summary, :notes, :eaten_at, :meal_type)
       end
 
       def meal_json(meal)

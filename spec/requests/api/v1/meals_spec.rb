@@ -73,6 +73,17 @@ RSpec.describe "Api::V1::Meals", type: :request do
 
       expect(meal.reload.notes).to eq("post-workout")
     end
+
+    it "edits the summary title without re-parsing" do
+      sign_in(aaron)
+      meal = create(:meal, user: aaron, raw_text: "eggs", summary: "Auto title")
+
+      expect {
+        patch "/api/v1/meals/#{meal.id}", params: { summary: "My title" }, as: :json
+      }.not_to have_enqueued_job(ParseMealJob)
+
+      expect(meal.reload.summary).to eq("My title")
+    end
   end
 
   describe "GET /api/v1/meals/:id" do

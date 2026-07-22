@@ -305,9 +305,11 @@ export type FoodEntry = {
   parseNotes: string | null
 }
 
-// Editable meal fields (PATCH /meals/:id). Changing rawText re-parses.
+// Editable meal fields (PATCH /meals/:id). Changing rawText re-parses (which also
+// regenerates summary); a summary-only edit sticks until the next re-parse.
 export type MealInput = {
   rawText?: string
+  summary?: string | null
   notes?: string | null
   eatenAt?: string | null
   mealType?: string | null

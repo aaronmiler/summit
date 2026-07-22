@@ -119,6 +119,7 @@ function MealTypeRetag({ meal }: { meal: Meal }) {
 function MealEditor({ meal, onClose }: { meal: Meal; onClose: () => void }) {
   const update = useUpdateMeal(meal.id)
   const [rawText, setRawText] = useState(meal.rawText)
+  const [summary, setSummary] = useState(meal.summary ?? '')
   const [notes, setNotes] = useState(meal.notes ?? '')
   const [eatenAt, setEatenAt] = useState(toLocalInput(meal.eatenAt))
 
@@ -126,6 +127,7 @@ function MealEditor({ meal, onClose }: { meal: Meal; onClose: () => void }) {
     update.mutate(
       {
         rawText: rawText.trim(),
+        summary: summary.trim() || null,
         notes: notes.trim() || null,
         eatenAt: eatenAt === '' ? null : eatenAt,
       },
@@ -135,6 +137,18 @@ function MealEditor({ meal, onClose }: { meal: Meal; onClose: () => void }) {
 
   return (
     <div className="meal-editor card card--surface mt-4">
+      <div className="form-group">
+        <label className="form-label" htmlFor="meal-summary">
+          Title
+        </label>
+        <input
+          id="meal-summary"
+          className="form-input"
+          value={summary}
+          onChange={(e) => setSummary(e.target.value)}
+          placeholder="Auto from the parse"
+        />
+      </div>
       <div className="form-group">
         <label className="form-label" htmlFor="meal-raw">
           Meal (editing re-parses)
