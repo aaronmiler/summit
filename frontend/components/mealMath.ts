@@ -67,7 +67,7 @@ function dayKey(d: Date): string {
 }
 
 // Group meals into calendar days (local time), newest day first; within a day
-// meals run chronologically (morning → night). Each day carries summed totals.
+// meals run newest-first (night → morning). Each day carries summed totals.
 export function groupMealsByDay(meals: Meal[]): MealDay[] {
   const byKey = new Map<string, Meal[]>()
   for (const meal of meals) {
@@ -79,7 +79,7 @@ export function groupMealsByDay(meals: Meal[]): MealDay[] {
 
   const days: MealDay[] = []
   for (const [key, dayMeals] of byKey) {
-    dayMeals.sort((a, b) => mealTime(a).getTime() - mealTime(b).getTime())
+    dayMeals.sort((a, b) => mealTime(b).getTime() - mealTime(a).getTime())
     const [y, mo, d] = key.split('-').map(Number)
     days.push({ key, date: new Date(y, mo - 1, d), meals: dayMeals, totals: dayTotals(dayMeals) })
   }

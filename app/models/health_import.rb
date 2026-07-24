@@ -21,8 +21,8 @@ class HealthImport < ApplicationRecord
     bits.compact.join(" · ")
   end
 
-  private
-
+  # Distance units live on `raw` (not a column); default to miles. Public so the
+  # workout serializer can label distance/pace consistently with `summary`.
   def distance_units
     (raw.is_a?(Hash) && raw.dig("distance", "units")) || "mi"
   end

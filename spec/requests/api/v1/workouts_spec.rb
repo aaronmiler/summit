@@ -200,6 +200,27 @@ RSpec.describe "Api::V1::Workouts", type: :request do
       get "/api/v1/workouts/#{others.id}"
       expect(response).to have_http_status(:not_found)
     end
+
+    it "surfaces Apple Health stats for an import-materialized workout" do
+      offscript = create(:workout, user: aaron, routine: nil, started_at: 1.hour.ago, finished_at: 30.minutes.ago)
+      create(:health_import, workout: offscript, user: aaron, activity_type: "Climbing",
+        calories: 394, total_calories: 476, avg_hr: 141, max_hr: 181,
+        raw: { "elevationUp" => { "qty" => 105.6, "units" => "ft" } })
+
+      get "/api/v1/workouts/#{offscript.id}"
+
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body["health"]).to include(
+        "activity" => "Climbing", "calories" => 394, "total_calories" => 476,
+        "avg_hr" => 141, "max_hr" => 181, "elevation" => 106, "elevation_units" => "ft",
+      )
+    end
+
+    it "has a null health object for a normal logged workout" do
+      workout = create(:workout, user: aaron, routine:, started_at: 1.hour.ago, finished_at: 30.minutes.ago)
+      get "/api/v1/workouts/#{workout.id}"
+      expect(response.parsed_body["health"]).to be_nil
+    end
   end
 
   describe "DELETE /api/v1/workouts/:id (discard a mis-start)" do

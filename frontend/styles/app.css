@@ -453,6 +453,8 @@
 /* A done/todo indicator: outline ring when empty, filled green when logged. */
 .status-dot {
   flex: none;
+  display: inline-block;
+  vertical-align: middle;
   width: 14px;
   height: 14px;
   border-radius: 50%;
@@ -462,6 +464,15 @@
 .status-dot--done {
   background-color: var(--color-brand-fg);
   border-color: var(--color-brand-fg);
+}
+
+/* Beside caption-sized text (e.g. the meal parse badge) the 14px dot reads big;
+   scale it down to sit proportionally with 12px text. */
+.caption .status-dot {
+  width: 9px;
+  height: 9px;
+  border-width: 1.5px;
+  margin-right: 2px;
 }
 
 /* Focused step: back link + progress, jumpable dots, then prev/next. */
@@ -1210,6 +1221,7 @@
 
 .item-editor__rescale .form-group {
   flex: 1;
+  margin-bottom: 0;
 }
 
 /* Add-item form. */
@@ -1247,4 +1259,14 @@
   display: flex;
   gap: var(--space-2);
   flex-shrink: 0;
+}
+
+/* Error toast: swap the inverted surface for the destructive color. */
+.toast--error {
+  background-color: var(--color-destructive);
+  color: #fff;
+}
+
+.toast--error .toast-action {
+  color: #fff;
 }

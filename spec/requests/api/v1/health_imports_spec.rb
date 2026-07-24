@@ -17,8 +17,10 @@ RSpec.describe "Api::V1::HealthImports", type: :request do
             end: "2026-07-15T09:45:00 Z",
             duration: 1980,
             activeEnergyBurned: { qty: 233, units: "kcal" },
+            totalEnergy: { qty: 261, units: "kcal" },
             distance: { qty: 1.95, units: "mi" },
-            avgHeartRate: { qty: 118, units: "bpm" }
+            avgHeartRate: { qty: 118, units: "bpm" },
+            maxHeartRate: { qty: 142, units: "bpm" }
           }
         ],
         metrics: []
@@ -51,6 +53,19 @@ RSpec.describe "Api::V1::HealthImports", type: :request do
       expect(event.metadata["items"].first).to include("name" => "Outdoor Walk", "outcome" => "created")
     end
 
+    it "fingerprints the (un-ingested) metrics stream so we can size it later" do
+      body = payload(id: "M1")
+      body[:data][:metrics] = [
+        { name: "resting_heart_rate", units: "bpm", data: [] },
+        { name: "heart_rate_variability", units: "ms", data: [] },
+      ]
+      post_import(body, token: aaron.api_token)
+
+      expect(IntegrationEvent.last.metadata["metrics"]).to include(
+        "count" => 2, "names" => %w[resting_heart_rate heart_rate_variability],
+      )
+    end
+
     it "logs an unauthorized push (no user)" do
       expect { post_import(payload, token: "nope") }.to change { IntegrationEvent.count }.by(1)
       expect(IntegrationEvent.last).to have_attributes(status: "unauthorized", user: nil)
@@ -77,7 +92,7 @@ RSpec.describe "Api::V1::HealthImports", type: :request do
     import = aaron.health_imports.last
     expect(import).to have_attributes(
       source: "health_auto_export", external_id: "ABC-123",
-      activity_type: "Outdoor Walk", calories: 233, avg_hr: 118,
+      activity_type: "Outdoor Walk", calories: 233, total_calories: 261, avg_hr: 118, max_hr: 142,
     )
     expect(import.distance).to eq(1.95)
     expect(import.raw["name"]).to eq("Outdoor Walk") # verbatim payload kept

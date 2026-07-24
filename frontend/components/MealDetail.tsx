@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import {
   useMeal,
@@ -12,6 +12,7 @@ import {
 } from '~/api/queries'
 import type { Meal, FoodEntry } from '~/types'
 import { mealCalories, mealMacros, hasMacros, mealType, parseStatusLabel, toNum } from './mealMath'
+import { toast } from './Toast'
 import MealTypeChips from './MealTypeChips'
 
 // One meal's detail + editor. The text is the truth (editing it re-parses); the
@@ -21,6 +22,19 @@ export default function MealDetail() {
   const { id } = useParams()
   const { data: meal, isLoading, isError } = useMeal(id)
   const [editing, setEditing] = useState(false)
+
+  // The parse runs in a background job; useMeal polls while it's pending. Toast
+  // the pending -> terminal transition so the result lands even if you look away.
+  const prevStatus = useRef<string | undefined>(undefined)
+  useEffect(() => {
+    const status = meal?.parseStatus
+    const prev = prevStatus.current
+    prevStatus.current = status
+    if (prev === 'pending' && status && status !== 'pending') {
+      if (status === 'ok') toast('Meal parsed')
+      else toast("Couldn't parse the meal", 'error')
+    }
+  }, [meal?.parseStatus])
 
   if (isLoading) return <p className="text-muted">Loading…</p>
   if (isError || !meal) return <p className="text-muted">Meal not found.</p>
@@ -233,7 +247,7 @@ function ItemRow({ entry }: { entry: FoodEntry }) {
         <button
           className="btn btn--ghost btn--compact"
           disabled={estimate.isPending}
-          onClick={() => estimate.mutate(entry.id)}
+          onClick={() => estimate.mutate(entry.id, { onSuccess: () => toast('Macros estimated') })}
           title="Ask the LLM to estimate this item's macros"
         >
           {estimate.isPending ? 'Estimating…' : hasMacros(entry) ? 'Re-estimate' : 'Estimate'}
@@ -269,18 +283,31 @@ function ItemEditor({ entry, onClose }: { entry: FoodEntry; onClose: () => void 
   function handleRescale() {
     const next = toNum(amount)
     if (next == null || next <= 0) return
-    rescale.mutate({ id: entry.id, amount: next })
+    rescale.mutate({ id: entry.id, amount: next }, { onSuccess: () => toast('Rescaled') })
   }
 
   function handleFillMacros() {
     const cals = toNum(knownCals)
     if (cals == null || cals <= 0) return
-    estimate.mutate({ id: entry.id, calories: cals }, { onSuccess: onClose })
+    estimate.mutate(
+      { id: entry.id, calories: cals },
+      {
+        onSuccess: () => {
+          toast('Macros filled')
+          onClose()
+        },
+      },
+    )
   }
 
   function handleDelete() {
     if (!window.confirm(`Remove "${entry.name}"?`)) return
-    del.mutate(entry.id, { onSuccess: onClose })
+    del.mutate(entry.id, {
+      onSuccess: () => {
+        toast('Item removed')
+        onClose()
+      },
+    })
   }
 
   return (
@@ -391,6 +418,7 @@ function AddItemForm({ mealId }: { mealId: number }) {
       { name: name.trim(), amount: toNum(amount), unit: unit.trim() || null },
       {
         onSuccess: () => {
+          toast('Item added')
           setName('')
           setAmount('')
           setUnit('')

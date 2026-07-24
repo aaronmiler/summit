@@ -35,6 +35,20 @@ export function formatDateTime(iso: string): string {
   return `${formatDate(iso)} · ${formatTime(iso)}`
 }
 
+// Pace as "m:ss /<unit>" from a distance + duration, e.g. "16:55 /mi"; null when
+// either is missing or distance is zero (pace is meaningless without movement).
+export function formatPace(
+  distance: number | null,
+  seconds: number | null,
+  units: string | null,
+): string | null {
+  if (distance == null || seconds == null || distance <= 0) return null
+  const perUnit = Math.round(seconds / distance)
+  const mins = Math.floor(perUnit / 60)
+  const secs = perUnit % 60
+  return `${mins}:${secs.toString().padStart(2, '0')} /${units ?? 'mi'}`
+}
+
 // Elapsed time between start and finish, e.g. "48 min" / "1h 12m"; null if unfinished.
 export function workoutDuration(startedAt: string, finishedAt: string | null): string | null {
   if (!finishedAt) return null

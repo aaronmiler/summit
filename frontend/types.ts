@@ -259,6 +259,23 @@ export type WorkoutDetail = {
   notes: string | null
   routine: { id: number; name: string } | null
   exercises: LoggedExercise[]
+  // Present only for import-materialized (off-script) workouts; null otherwise.
+  health: WorkoutHealth | null
+}
+
+// Apple Health stats for a pushed workout. Pace is derived (distance + duration).
+// Fields are per-activity: cardio carries distance, climbing carries elevation, etc.
+export type WorkoutHealth = {
+  activity: string | null
+  calories: number | null // active energy
+  totalCalories: number | null // active + basal ("calories out")
+  distance: number | null
+  distanceUnits: string | null
+  durationSeconds: number | null
+  avgHr: number | null
+  maxHr: number | null
+  elevation: number | null
+  elevationUnits: string | null
 }
 
 // The values to paste into the Health Auto Export app (from GET

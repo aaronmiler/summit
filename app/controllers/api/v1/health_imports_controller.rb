@@ -34,7 +34,13 @@ module Api
         log_push(
           status: IntegrationEvent::OK,
           summary: "#{workouts.size} workout(s): #{created} created, #{skipped} skipped",
-          metadata: { received: workouts.size, created: created, skipped: skipped, items: items }
+          # `metrics` (daily HR/HRV/sleep/weight) isn't ingested yet — we don't
+          # have a home for it. Record its shape here so a real push reveals what
+          # arrives before we commit to a schema (see docs/open_questions.md).
+          metadata: {
+            received: workouts.size, created: created, skipped: skipped, items: items,
+            metrics: metrics_digest(body.dig("data", "metrics"))
+          }
         )
 
         render json: {
@@ -85,8 +91,10 @@ module Api
           recorded_at: started,
           duration_seconds: workout["duration"]&.to_i,
           calories: qty(workout["activeEnergyBurned"])&.round,
+          total_calories: qty(workout["totalEnergy"])&.round,
           distance: qty(workout["distance"]),
           avg_hr: (qty(workout["avgHeartRate"]) || workout.dig("heartRate", "avg", "qty"))&.round,
+          max_hr: (qty(workout["maxHeartRate"]) || workout.dig("heartRate", "max", "qty"))&.round,
           raw: workout
         )
         workout_record = @token_user.workouts.create!(
@@ -104,6 +112,14 @@ module Api
       # HAE quantities are { "qty": Number, "units": "..." }; pull the number.
       def qty(value)
         value["qty"] if value.is_a?(Hash)
+      end
+
+      # A cheap fingerprint of the (currently un-ingested) metrics stream: how many
+      # arrived and their names. Enough to design the daily-metrics table off a
+      # real payload without storing the whole thing on the event.
+      def metrics_digest(metrics)
+        list = Array(metrics)
+        { count: list.size, names: list.filter_map { |m| m["name"] if m.is_a?(Hash) }.uniq }
       end
 
       # HAE stamps timestamps like "2026-07-15T09:12:00 Z" (note the space).

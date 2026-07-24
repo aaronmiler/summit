@@ -27,11 +27,12 @@ module Api
       # exercise. Grouping is off the *Log* (each set carries its own
       # exercise_id), so history is correct even if the routine later changes.
       def show
-        workout = current_user.workouts.includes(set_logs: :exercise).find(params[:id])
+        workout = current_user.workouts.includes(:health_imports, set_logs: :exercise).find(params[:id])
         groups = workout.set_logs.sort_by(&:id).group_by(&:exercise)
 
         render json: workout.as_json(only: %i[id started_at finished_at notes]).merge(
           "routine" => workout.routine&.as_json(only: %i[id name]),
+          "health" => health_json(workout.health_imports.first),
           "exercises" => groups.map do |exercise, sets|
             { "exercise" => exercise_json(exercise), "sets" => sets.map(&:as_log_json) }
           end
@@ -184,6 +185,28 @@ module Api
 
       def exercise_json(exercise)
         exercise.as_json(only: %i[id name modality muscle_group])
+      end
+
+      # Apple Health stats for an import-materialized workout (else nil). Pace is
+      # left to the frontend (distance + duration are both here); units ride off
+      # `raw` so they match the summary. Elevation is activity-specific (climbing/
+      # outdoor only), read straight off `raw` — no column earns its keep yet.
+      def health_json(import)
+        return nil unless import
+
+        elevation = import.raw.is_a?(Hash) ? import.raw["elevationUp"] : nil
+        {
+          "activity" => import.activity_type,
+          "calories" => import.calories,
+          "total_calories" => import.total_calories,
+          "distance" => import.distance&.to_f,
+          "distance_units" => import.distance_units,
+          "duration_seconds" => import.duration_seconds,
+          "avg_hr" => import.avg_hr,
+          "max_hr" => import.max_hr,
+          "elevation" => elevation && elevation["qty"]&.round,
+          "elevation_units" => elevation && elevation["units"]
+        }
       end
 
       # Last-used numbers for an exercise (this user, any workout). Decimals are
