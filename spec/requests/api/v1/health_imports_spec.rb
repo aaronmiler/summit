@@ -57,7 +57,7 @@ RSpec.describe "Api::V1::HealthImports", type: :request do
       body = payload(id: "M1")
       body[:data][:metrics] = [
         { name: "resting_heart_rate", units: "bpm", data: [] },
-        { name: "heart_rate_variability", units: "ms", data: [] },
+        { name: "heart_rate_variability", units: "ms", data: [] }
       ]
       post_import(body, token: aaron.api_token)
 
