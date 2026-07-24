@@ -28,24 +28,22 @@ module Api
         body = JSON.parse(request.raw_post)
         workouts = Array(body.dig("data", "workouts"))
         items = workouts.map { |w| ingest_workout(w) }
-        created = items.count { |i| i[:outcome] == :created }
-        skipped = items.count { |i| i[:outcome] == :skipped } # already imported (dedupe)
+        counts = %i[created updated skipped].index_with { |o| items.count { |i| i[:outcome] == o } }
 
         log_push(
           status: IntegrationEvent::OK,
-          summary: "#{workouts.size} workout(s): #{created} created, #{skipped} skipped",
+          summary: "#{workouts.size} workout(s): " \
+                   "#{counts[:created]} created, #{counts[:updated]} updated, #{counts[:skipped]} skipped",
           # `metrics` (daily HR/HRV/sleep/weight) isn't ingested yet — we don't
           # have a home for it. Record its shape here so a real push reveals what
           # arrives before we commit to a schema (see docs/open_questions.md).
           metadata: {
-            received: workouts.size, created: created, skipped: skipped, items: items,
+            received: workouts.size, **counts, items: items,
             metrics: metrics_digest(body.dig("data", "metrics"))
           }
         )
 
-        render json: {
-          workouts_received: workouts.size, created: created, skipped: skipped
-        }, status: :created
+        render json: { workouts_received: workouts.size, **counts }, status: :created
       rescue JSON::ParserError => e
         log_push(status: "bad_request", summary: "invalid JSON", error: e.message)
         render json: { error: "invalid JSON" }, status: :bad_request
@@ -72,31 +70,33 @@ module Api
       end
 
       # One workout -> a HealthImport + the Workout it materializes. Idempotent on
-      # (user, external_id) so HAE re-sending overlapping windows is a no-op.
-      # Returns a per-item detail hash (its `outcome` drives the push counts).
+      # (user, external_id): a re-send of a known workout *refreshes* it in place
+      # rather than duplicating — Apple Health backfills HR/energy after a session
+      # ends, so a later push carries fuller data. Returns a per-item detail hash
+      # (its `outcome` drives the push counts).
       def ingest_workout(workout)
         external_id = workout["id"].presence
         detail = { name: workout["name"], start: workout["start"], external_id: external_id }
-        return detail.merge(outcome: :skipped) if external_id && @token_user.health_imports.exists?(external_id: external_id)
 
-        started = parse_time(workout["start"]) || Time.current
+        existing = external_id && @token_user.health_imports.find_by(external_id: external_id)
+        if existing
+          refresh_import(existing, workout)
+          return detail.merge(outcome: :updated)
+        end
+
+        create_import(workout, external_id)
+        detail.merge(outcome: :created)
+      rescue ActiveRecord::RecordNotUnique
+        detail.merge(outcome: :skipped) # lost a race on the dedupe index
+      end
+
+      # First sight of a workout: the import + the Workout it materializes.
+      def create_import(workout, external_id)
+        import = @token_user.health_imports.create!(import_attributes(workout).merge(external_id: external_id))
         # Imports are historical: always finished, so they never become the
         # *active* workout.
+        started = import.recorded_at
         finished = parse_time(workout["end"]) || started
-
-        import = @token_user.health_imports.create!(
-          source: "health_auto_export",
-          external_id: external_id,
-          activity_type: workout["name"],
-          recorded_at: started,
-          duration_seconds: workout["duration"]&.to_i,
-          calories: qty(workout["activeEnergyBurned"])&.round,
-          total_calories: qty(workout["totalEnergy"])&.round,
-          distance: qty(workout["distance"]),
-          avg_hr: (qty(workout["avgHeartRate"]) || workout.dig("heartRate", "avg", "qty"))&.round,
-          max_hr: (qty(workout["maxHeartRate"]) || workout.dig("heartRate", "max", "qty"))&.round,
-          raw: workout
-        )
         workout_record = @token_user.workouts.create!(
           routine_id: nil, started_at: started, finished_at: finished, notes: import.summary
         )
@@ -104,9 +104,31 @@ module Api
         # Boundary 1: an inbound activity joins (or opens) the training session it
         # falls in — the warmup + the routine + the watch strength become one.
         TrainingSession.absorb(workout_record)
-        detail.merge(outcome: :created)
-      rescue ActiveRecord::RecordNotUnique
-        detail.merge(outcome: :skipped) # lost a race on the dedupe index
+      end
+
+      # Re-send of a known workout: refresh the stat columns + raw, and the
+      # materialized Workout's derived notes. The Workout row (and its session
+      # grouping) is left in place — only the data it carries is updated.
+      def refresh_import(import, workout)
+        import.update!(import_attributes(workout))
+        import.workout&.update!(notes: import.summary)
+      end
+
+      # Columns promoted off the HAE payload; the full payload rides on `raw`
+      # (lossless). Shared by create + refresh so both stay in sync.
+      def import_attributes(workout)
+        {
+          source: "health_auto_export",
+          activity_type: workout["name"],
+          recorded_at: parse_time(workout["start"]) || Time.current,
+          duration_seconds: workout["duration"]&.to_i,
+          calories: qty(workout["activeEnergyBurned"])&.round,
+          total_calories: qty(workout["totalEnergy"])&.round,
+          distance: qty(workout["distance"]),
+          avg_hr: (qty(workout["avgHeartRate"]) || workout.dig("heartRate", "avg", "qty"))&.round,
+          max_hr: (qty(workout["maxHeartRate"]) || workout.dig("heartRate", "max", "qty"))&.round,
+          raw: workout
+        }
       end
 
       # HAE quantities are { "qty": Number, "units": "..." }; pull the number.

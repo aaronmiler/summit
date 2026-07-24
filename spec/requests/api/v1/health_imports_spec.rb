@@ -87,7 +87,7 @@ RSpec.describe "Api::V1::HealthImports", type: :request do
     }.to change { aaron.health_imports.count }.by(1).and change { aaron.workouts.count }.by(1)
 
     expect(response).to have_http_status(:created)
-    expect(response.parsed_body).to include("workouts_received" => 1, "created" => 1, "skipped" => 0)
+    expect(response.parsed_body).to include("workouts_received" => 1, "created" => 1, "updated" => 0, "skipped" => 0)
 
     import = aaron.health_imports.last
     expect(import).to have_attributes(
@@ -103,13 +103,21 @@ RSpec.describe "Api::V1::HealthImports", type: :request do
     expect(workout.notes).to eq("Outdoor Walk · 1.95 mi · 233 cal")
   end
 
-  it "is idempotent on the HealthKit id (re-sends are no-ops)" do
+  it "refreshes a re-sent workout in place (Apple Health backfills later) without duplicating" do
     post_import(payload(id: "SAME"), token: aaron.api_token)
-    expect {
-      post_import(payload(id: "SAME"), token: aaron.api_token)
-    }.not_to change { aaron.workouts.count }
 
-    expect(response.parsed_body).to include("created" => 0, "skipped" => 1)
+    # A later push of the same session carries fuller/corrected numbers.
+    richer = payload(id: "SAME")
+    richer[:data][:workouts][0][:maxHeartRate] = { qty: 171, units: "bpm" }
+    richer[:data][:workouts][0][:totalEnergy] = { qty: 300, units: "kcal" }
+
+    expect {
+      post_import(richer, token: aaron.api_token)
+    }.to change { aaron.workouts.count }.by(0).and change { aaron.health_imports.count }.by(0)
+
+    expect(response.parsed_body).to include("created" => 0, "updated" => 1, "skipped" => 0)
+    import = aaron.health_imports.find_by(external_id: "SAME")
+    expect(import).to have_attributes(max_hr: 171, total_calories: 300)
   end
 
   it "the materialized workout shows up in history" do
